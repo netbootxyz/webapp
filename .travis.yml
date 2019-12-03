@@ -1,0 +1,26 @@
+sudo: true
+
+language: bash
+
+services:
+  - docker
+
+env:
+  global:
+    - DEBIAN_FRONTEND="noninteractive"
+    - BUILD_DATE=$(date '+%Y-%m-%dT%H:%M:%S%:z')
+    - DOCKERHUB_LIVE="netbootxyz/webapp-dev"
+
+jobs:
+  include:
+    - stage: BuildImage
+      if: (NOT (type IN (pull_request))) AND (tag IS blank)
+      script:
+        # Build image
+        - docker build --no-cache -f Dockerfile -t ${DOCKERHUB_LIVE}:${TRAVIS_COMMIT} .
+        - docker tag ${DOCKERHUB_LIVE}:${TRAVIS_COMMIT} ${DOCKERHUB_LIVE}:latest
+        # Login to DockerHub
+        - echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
+        # Push all of the tags
+        - docker push ${DOCKERHUB_LIVE}:${TRAVIS_COMMIT}
+        - docker push ${DOCKERHUB_LIVE}:latest

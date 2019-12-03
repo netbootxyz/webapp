@@ -1,0 +1,23 @@
+{
+  "name": "WebApp",
+  "version": "0.0.1",
+  "description": "Configuration and mirroring application for netboot.xyz stack",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/netbootxyz/webapp.git"
+  },
+  "author": "Netboot.xyz",
+  "license": "Apache-2.0",
+  "homepage": "https://netboot.xyz",
+  "dependencies": {
+    "express": "^4.17.1",
+    "http": "0.0.0",
+    "js-yaml": "^3.13.1",
+    "request": "^2.88.0",
+    "socket.io": "^2.3.0"
+  }
+}

@@ -1,0 +1,6 @@
+#!/usr/bin/with-contenv bash
+
+# Run App in development mode
+cd /code
+exec \
+s6-setuidgid abc /usr/bin/nodemon app.js &> /applogs/app.log
