@@ -9,7 +9,8 @@ RUN \
  apk add --no-cache \
 	nodejs \
 	git \
-	sudo && \
+	sudo \
+    tftp-hpa && \
  echo "**** install WebApp ****" && \
  git clone https://github.com/netbootxyz/webapp.git /code && \
  npm config set unsafe-perm true && \

@@ -1,0 +1,16 @@
+#!/usr/bin/with-contenv bash
+
+# create local logs dir
+mkdir -p /menus
+
+# just download/extract static dev file for now
+# future logic will download a build basedo n env variable and keep up to date overlaying users custom stuff
+curl -o \
+    /tmp/menus.tar.gz -L \
+	"https://netboot-test.s3-us-west-2.amazonaws.com/menus.tar.gz"
+tar xf \
+    /tmp/menus.tar.gz -C \
+	/menus
+
+# Ownership
+chown -R abc:abc /menus
