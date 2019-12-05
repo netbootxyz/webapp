@@ -6,6 +6,7 @@ var express = require('express');
 var fs = require('fs');
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var isBinaryFile = require("isbinaryfile").isBinaryFile;
 var request = require('request');
 var yaml = require('js-yaml');
 
@@ -39,11 +40,16 @@ io.on('connection', function(socket){
   });
   // When a file is requested send it's contents to the client
   socket.on('editgetfile', function(filename){
-    fs.readFile('/menus/' + filename, function (err, data) {
-      if (err) {
-        console.log('Unable to read file: ' + err);
+    var file = '/menus/' + filename ;
+    var data = fs.readFileSync(file);
+    var stat = fs.lstatSync(file);
+    isBinaryFile(data, stat.size).then((result) => {
+      if (result) {
+        io.sockets.in(socket.id).emit('editrenderfile','CANNOT EDIT THIS IS A BINARY FILE',filename);
       }
-      io.sockets.in(socket.id).emit('editrenderfile',data.toString("utf8"),filename);
+      else {
+        io.sockets.in(socket.id).emit('editrenderfile',data.toString("utf8"),filename);
+      }
     });
   });
   // When the endpoints content is requested send it to the client
