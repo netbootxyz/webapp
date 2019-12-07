@@ -7,8 +7,9 @@ RUN \
 	nodejs-npm && \
  echo "**** install runtime packages ****" && \
  apk add --no-cache \
+ 	git \
+    logrotate \
 	nodejs \
-	git \
 	sudo \
     tftp-hpa && \
  echo "**** install WebApp ****" && \
