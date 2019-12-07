@@ -8,11 +8,103 @@ var port = window.location.port;
 var protocol = window.location.protocol;
 var socket = io.connect(protocol + '//' + host + ':' + port, {});
 // If the page is being loaded for the first time render in the homepage
-$(document).ready(function(){renderhome()})
+$(document).ready(function(){renderdash()})
 
 
-//// Home Page rendering ////
-function renderhome(){
+//// Dashboard Page rendering ////
+function renderdash(){
+  $('#pagecontent').empty();
+  $('#pagecontent').append('<center><div class="spinner-grow" style="width: 3rem; height: 3rem;" role="status"><span class="sr-only">Loading...</span></div><br><h2>Getting Dashboard</h2></center>');
+  socket.emit('getdash');
+}
+socket.on('renderdash', function(response){
+  var tftpversion = response.tftpversion;
+  var nginxversion = response.nginxversion;
+  var webversion = response.webversion;
+  var menuversion = response.menuversion;
+  var remotemenuversion = response.remotemenuversion;
+  var cpustats = response.cpu;
+  var cpupercent = response.CPUpercent;
+  var memstats = response.mem;
+  var usedmem = (memstats.active/memstats.total)*100;
+  var totalmem = parseFloat(memstats.total/1000000000).toFixed(2);
+  var diskbuffer = parseFloat(memstats.buffcache/1000000000).toFixed(2);
+  if (menuversion != remotemenuversion){
+    var upgradebutton = '<button style="cursor:pointer;" onclick="upgrademenus(\'' + remotemenuversion + '\')" class="btn btn-success btn-sm">' + remotemenuversion + ' Available</button>'
+  }
+  else{
+    var upgradebutton = '<button class="btn btn-secondary btn-sm">Up to Date</button>'
+  }
+  $('#pagecontent').empty();
+  $('#pagecontent').append('\
+  <div class="card mb-3">\
+    <div class="card-header">\
+      Software and Services\
+    </div>\
+    <div class="card-body card-deck">\
+      <div class="card mb-3">\
+        <div class="card-header">\
+          NETBOOT.XYZ\
+        </div>\
+        <div class="card-body">\
+        <table class="table table-hover">\
+          <tr><td>Webapp Version: </td><td><a target="_blank" href="https://github.com/netbootxyz/webapp/releases/' + webversion + '">' + webversion + '</a></td></tr>\
+          <tr><td>Menus Version:</td><td><a target="_blank" href="https://github.com/netbootxyz/netboot.xyz/releases/' + menuversion + '">' + menuversion + '</a></td></tr>\
+          <tr><td>Upgrade Menus to latest</td><td>' + upgradebutton + '</td></tr>\
+        </table>\
+        </div>\
+      </div>\
+      <div class="card mb-3">\
+        <div class="card-header">\
+          Services\
+        </div>\
+        <div class="card-body">\
+        <table class="table table-hover">\
+          <tr><td>TFTP:</td><td>' + tftpversion + '</td></tr>\
+          <tr><td>WebServer:</td><td>' + nginxversion + '</td></tr>\
+        </table>\
+        </div>\
+      </div>\
+    </div>\
+  </div>\
+  <div class="card mb-3">\
+    <div class="card-header">\
+      System Stats\
+    </div>\
+    <div class="card-body card-deck">\
+      <div class="card mb-3">\
+        <div class="card-header">\
+          CPU\
+        </div>\
+        <div class="card-body">\
+        <table class="table table-hover">\
+          <tr><td>CPU</td><td>' + cpustats.manufacturer + ' ' + cpustats.brand + '</td></tr>\
+          <tr><td>Cores</td><td>' + cpustats.cores + '</td></tr>\
+          <tr><td>Usage</td><td><div class="progress"><div class="progress-bar" role="progressbar" style="width: ' + cpupercent + '%;" aria-valuenow="' + cpupercent + '" aria-valuemin="0" aria-valuemax="100"></div></div></td></tr>\
+        </table>\
+        </div>\
+      </div>\
+      <div class="card mb-3">\
+        <div class="card-header">\
+          Memory\
+        </div>\
+        <div class="card-body">\
+        <table class="table table-hover">\
+          <tr><td>Total Mem</td><td>' + totalmem + 'G</td></tr>\
+          <tr><td>Disk buffer</td><td>' + diskbuffer + 'G</td></tr>\
+          <tr><td>Usage</td><td><div class="progress"><div class="progress-bar" role="progressbar" style="width: ' + usedmem + '%;" aria-valuenow="' + usedmem + '" aria-valuemin="0" aria-valuemax="100"></div></div></td></tr>\
+        </table>\
+        </div>\
+      </div>\
+    </div>\
+  </div>\
+  ');
+});
+
+
+//// Config Page rendering ////
+function renderconfig(){
+  $('#pagecontent').empty();
   $('#pagecontent').append('<center><div class="spinner-grow" style="width: 3rem; height: 3rem;" role="status"><span class="sr-only">Loading...</span></div><br><h2>Getting Config Items</h2></center>');
   socket.emit('getconfig');
 }

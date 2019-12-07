@@ -14,7 +14,7 @@ if [[ ! -f /menus/remote/menu.ipxe ]]; then
   tar xf \
     /tmp/menus.tar.gz -C \
     /config/menus/remote
-  cp /config/menus/remote/* /menus
+  cp /config/menus/remote/* /config/menus
 fi
 # Ownership
 chown -R abc:abc /config

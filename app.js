@@ -2,12 +2,14 @@
 // Main Node.js app
 
 var app = require('express')();
+var exec = require('child_process').exec;
 var express = require('express');
 var fs = require('fs');
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var isBinaryFile = require("isbinaryfile").isBinaryFile;
 var request = require('request');
+var si = require('systeminformation');
 var yaml = require('js-yaml');
 
 ////// PATHS //////
@@ -29,6 +31,32 @@ io.on('connection', function(socket){
   ///////////////////////////
   ////// Socket events //////
   ///////////////////////////
+  // When dashboard info is requested send to client
+  socket.on('getdash', function(){
+    var tftpcmd = '/usr/sbin/in.tftpd --version';
+    var nginxcmd = '/usr/sbin/nginx -v';
+    // Hard code until we have endpoints to ingest
+    var dashinfo = {};
+    dashinfo['webversion'] = "0.0.1";
+    dashinfo['menuversion'] = "1.04";
+    dashinfo['remotemenuversion'] = "1.05";
+    si.cpu(function(cpu) {
+      dashinfo['cpu'] = cpu;
+      si.mem(function(mem) {
+        dashinfo['mem'] = mem;
+        si.currentLoad(function(currentLoad) {
+          dashinfo['CPUpercent'] = currentLoad.currentload_user;
+          exec(tftpcmd, function (err, stdout) {
+            dashinfo['tftpversion'] = stdout;
+            exec(nginxcmd, function (err, stdout, stderr) {
+               dashinfo['nginxversion'] = stderr;
+               io.sockets.in(socket.id).emit('renderdash',dashinfo);
+            });
+          });  
+        });
+      });
+    });
+  });
   // When config info is requested send file list to client
   socket.on('getconfig', function(){
     var local_files = fs.readdirSync('/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);

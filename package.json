@@ -19,6 +19,7 @@
     "isbinaryfile": "^4.0.2",
     "js-yaml": "^3.13.1",
     "request": "^2.88.0",
-    "socket.io": "^2.3.0"
+    "socket.io": "^2.3.0",
+    "systeminformation": "^4.16.0"
   }
 }
