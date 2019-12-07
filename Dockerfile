@@ -8,10 +8,11 @@ RUN \
  echo "**** install runtime packages ****" && \
  apk add --no-cache \
  	git \
-    logrotate \
+	logrotate \
+	nginx \
 	nodejs \
 	sudo \
-    tftp-hpa && \
+	tftp-hpa && \
  echo "**** install WebApp ****" && \
  git clone https://github.com/netbootxyz/webapp.git /code && \
  npm config set unsafe-perm true && \

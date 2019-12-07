@@ -2,6 +2,8 @@ Basic run example:
 
 ```
 docker run -d \
+  -e PUID=1000 \
+  -e PGID=1000 \
   -v <path to menu/config>:/config \
   -v <path to mirrored assets>:/assets `#optional` \
   -p 69:69/udp \
