@@ -97,10 +97,12 @@ io.on('connection', function(socket){
   });
   // When the endpoints content is requested send it to the client
   socket.on('getlocal', function(filename){
+    // hard code for now
+    var remotemenuversion = '1.04';
     request.get('https://raw.githubusercontent.com/netbootxyz/netboot.xyz/development/endpoints.yml', function (error, response, body) {
         if (!error && response.statusCode == 200) {
             var endpoints = yaml.safeLoad(body);
-            io.sockets.in(socket.id).emit('renderlocal',endpoints);
+            io.sockets.in(socket.id).emit('renderlocal',endpoints,remotemenuversion);
         }
     });
   });

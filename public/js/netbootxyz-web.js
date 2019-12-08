@@ -210,9 +210,74 @@ function renderlocal(){
   $('#pagecontent').append('<center><div class="spinner-grow" style="width: 3rem; height: 3rem;" role="status"><span class="sr-only">Loading...</span></div><br><h2>Getting Remote file list</h2></center>');
   socket.emit('getlocal');
 }
-socket.on('renderlocal', function(response){
+socket.on('renderlocal', function(endpoints,remotemenuversion){
   $('#pagecontent').empty();
-  $.each(response.endpoints, function( index, value ) {
-    $('#pagecontent').append(index + '<br>');
+  $('#pagecontent').append('\
+  <div class="card-group">\
+    <div class="card">\
+      <div class="card-header">\
+        Remote Functions\
+      </div>\
+      <div class="card-body">\
+      <table class="table table-sm" id="">\
+      </table>\
+      </div>\
+    </div>\
+    <div class="card">\
+      <div class="card-header">\
+        Local Functions\
+      </div>\
+      <div class="card-body">\
+      <table class="table table-sm" id="">\
+      </table>\
+      </div>\
+    </div>\
+  </div>\
+  <div class="card-group">\
+    <div class="card">\
+      <div class="card-header">\
+        Remote Assets at <a target="_blank" href="https://github.com/netbootxyz/netboot.xyz/releases/' + remotemenuversion + '">' + remotemenuversion + '</a>\
+        <span style="float:right;"><button onclick="remoteselect()" class="btn btn-primary btn-sm mr-2">Select All</button><button onclick="remoteclear()" class="btn btn-secondary btn-sm">Clear Selection</button></span>\
+      </div>\
+      <div class="card-body">\
+      <table class="table table-sm" id="remoteassets">\
+      </table>\
+      </div>\
+    </div>\
+    <div class="card">\
+      <div class="card-header">\
+        Local Assets\
+        <span style="float:right;"><button onclick="localselect()" class="btn btn-primary btn-sm mr-2">Select All</button><button onclick="localclear()" class="btn btn-secondary btn-sm">Clear Selection</button></span>\
+      </div>\
+      <div class="card-body">\
+      <table class="table table-sm" id="localassets">\
+      </table>\
+      </div>\
+    </div>\
+  </div>');
+  $.each(endpoints.endpoints, function( index, value ) {
+    $.each(value.files, function( arrindex, file ) {
+      $('#remoteassets').append('<tr><td><input type="checkbox" class="form-check-input remotecheck" id="fill"></td><td>' + index + '</td><td><a href="https://github.com/netbootxyz' + value.path + file + '" target="_blank">' + value.path.split('download/')[1] + file + '</a></td></tr>');
+    });
   });
 });
+function remoteselect(){   
+  $('.remotecheck').each(function() {
+    this.checked = true;                        
+  });
+};
+function remoteclear(){   
+  $('.remotecheck').each(function() {
+    this.checked = false;                        
+  });
+};
+function localselect(){   
+  $('.localcheck').each(function() {
+    this.checked = true;                        
+  });
+};
+function localclear(){   
+  $('.localcheck').each(function() {
+    this.checked = false;                        
+  });
+};
