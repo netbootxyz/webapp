@@ -13,6 +13,7 @@ var path = require('path');
 var readdirp = require('readdirp');
 var request = require('request');
 var si = require('systeminformation');
+const util = require('util');
 var { version } = require('./package.json');
 var yaml = require('js-yaml');
 
@@ -129,6 +130,15 @@ io.on('connection', function(socket){
       io.sockets.in(socket.id).emit('renderlocalhook');
     });
   });
+  // When Local deletes are requested purge items
+  socket.on('deletelocal', function(dlfiles){
+    for (var i in dlfiles){
+      var file = dlfiles[i];
+      fs.unlinkSync('/assets' + file);
+      console.log('Deleted /assets' + file);
+    }
+    io.sockets.in(socket.id).emit('renderlocalhook');
+  });
 });
 
 //// Functions ////
@@ -195,6 +205,7 @@ async function dlremote(dlfiles, callback){
 
 // downloader loop
 async function downloader(downloads){
+  var startTime = new Date();
   var total = downloads.length;
   for (var i in downloads){
     var value = downloads[i];
@@ -205,10 +216,34 @@ async function downloader(downloads){
     dl.on('end', function(){ 
       console.log('Downloaded ' + url + ' to ' + path);
     });
-    dl.on('progress', function(stats){ 
-      io.emit('dldata', url, [+i + 1,total], stats);
+    dl.on('progress', function(stats){
+      var currentTime = new Date();
+      var elaspsedTime = currentTime - startTime;
+      if (elaspsedTime > 500) {
+        startTime = currentTime;
+        io.emit('dldata', url, [+i + 1,total], stats);
+      }
     });
     await dl.start();
+    // Part 2 if exists repeat
+    var requestPromise = util.promisify(request);
+    var response = await requestPromise(url + '.part2', {method: 'HEAD'});
+    var s3test = response.headers.server;
+    if (s3test == 'AmazonS3'){
+      var dl2 = new DownloaderHelper(url + '.part2', path, dloptions);
+      dl2.on('end', function(){ 
+        console.log('Downloaded ' + url + '.part2' + ' to ' + path);
+      });
+      dl2.on('progress', function(stats){
+        var currentTime = new Date();
+        var elaspsedTime = currentTime - startTime;
+        if (elaspsedTime > 500) {
+          startTime = currentTime;
+          io.emit('dldata', url, [+i + 1,total], stats);
+        }
+      });
+      await dl2.start();
+    }
   }
   io.emit('purgestatus');
 }

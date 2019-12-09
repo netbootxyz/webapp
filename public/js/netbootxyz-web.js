@@ -224,28 +224,13 @@ socket.on('renderlocal', function(endpoints,localfiles,remotemenuversion){
   $('#pagecontent').append('\
   <div class="card-group">\
     <div class="card">\
-      <div class="card-body">\
-        <div class="row">\
-          <div class="col-8">\
-          </div>\
-          <div class="col-4">\
-            <button onclick="dlremote()" class="btn btn-success btn-sm">Download Selected</button>\
-          </div>\
-        </div>\
-      </div>\
-    </div>\
-    <div class="card">\
-      <div class="card-body">\
-      <table class="table table-sm" id="">\
-      </table>\
-      </div>\
-    </div>\
-  </div>\
-  <div class="card-group">\
-    <div class="card">\
       <div class="card-header">\
         Remote Assets at <a target="_blank" href="https://github.com/netbootxyz/netboot.xyz/releases/' + remotemenuversion + '">' + remotemenuversion + '</a>\
-        <span style="float:right;"><button onclick="remoteselect()" class="btn btn-primary btn-sm mr-2">Select All</button><button onclick="remoteclear()" class="btn btn-secondary btn-sm">Clear Selection</button></span>\
+        <span style="float:right;">\
+          <button onclick="remoteselect()" class="btn btn-primary btn-sm mr-2">Select All</button>\
+          <button onclick="remoteclear()" class="btn btn-secondary btn-sm mr-2">Clear Selection</button>\
+          <button onclick="dlremote()" class="btn btn-success btn-sm">Download Selected</button>\
+        </span>\
       </div>\
       <div class="card-body">\
       <table class="table table-sm" id="remoteassets">\
@@ -255,7 +240,11 @@ socket.on('renderlocal', function(endpoints,localfiles,remotemenuversion){
     <div class="card">\
       <div class="card-header">\
         Local Assets\
-        <span style="float:right;"><button onclick="localselect()" class="btn btn-primary btn-sm mr-2">Select All</button><button onclick="localclear()" class="btn btn-secondary btn-sm">Clear Selection</button></span>\
+        <span style="float:right;">\
+          <button onclick="localselect()" class="btn btn-primary btn-sm mr-2">Select All</button>\
+          <button onclick="localclear()" class="btn btn-secondary btn-sm">Clear Selection</button>\
+          <button onclick="deletelocal()" class="btn btn-danger btn-sm">Delete Selected</button>\
+        </span>\
       </div>\
       <div class="card-body">\
       <table class="table table-sm" id="localassets">\
@@ -266,7 +255,7 @@ socket.on('renderlocal', function(endpoints,localfiles,remotemenuversion){
   $.each(endpoints.endpoints, function( index, value ) {
     $.each(value.files, function( arrindex, file ) {
       if (localfiles.includes(value.path + file)){
-        $('#localassets').append('<tr><td><input type="checkbox" class="form-check-input localcheck" value="' + value.path + file + '"></td><td>' + index + '</td><td><a href="https://github.com/netbootxyz' + value.path + file + '" target="_blank">' + value.path.split('download/')[1] + file + '</a></td></tr>');
+        $('#localassets').append('<tr><td><input type="checkbox" class="form-check-input localcheck" value="' + value.path + file + '"></td><td>' + index + '</td><td>' +  value.path.split('download/')[1] + file + '</td></tr>');
       }
       else{
         $('#remoteassets').append('<tr><td><input type="checkbox" class="form-check-input remotecheck" value="' + value.path + file + '"></td><td>' + index + '</td><td><a href="https://github.com/netbootxyz' + value.path + file + '" target="_blank">' + value.path.split('download/')[1] + file + '</a></td></tr>');
@@ -312,6 +301,20 @@ function dlremote(){
 socket.on('renderlocalhook', function(){
   renderlocal();
 });
+// Delete local files
+function deletelocal(){
+  var allfiles = $('.localcheck');
+  var deletefiles = [];
+  $.each(allfiles, function( index, value ) {
+    if($(this).is(":checked")){
+      deletefiles.push($(this).val());
+    }
+  }).promise().done(function(){
+    if(deletefiles.length != 0){
+      socket.emit('deletelocal',deletefiles);
+    }
+  });
+}
 
 //// Download Status Bars ////
 socket.on('dldata', function(url, count, stats){
