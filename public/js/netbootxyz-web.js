@@ -170,11 +170,11 @@ socket.on('editrenderfile', function(response,filename,metadata){
     var buttons = '';
   }
   else if (metadata == false){
-    var buttons = '<button style="cursor:pointer;" onclick="saveconfig(\'' + filename + '\')" class="btn btn-success m-3 float-right" type="submit">Save Config</button>';
+    var buttons = '<button onclick="saveconfig(\'' + filename + '\')" class="btn btn-success m-3 float-right" type="submit">Save Config</button>';
   }
   else if (metadata == true){
-    var buttons = '<button style="cursor:pointer;" onclick="saveconfig(\'' + filename + '\')" class="btn btn-success m-3 float-right" type="submit">Save Config</button>\
-                   <button style="cursor:pointer;" onclick="revertconfig(\'' + filename + '\')" class="btn btn-primary m-3 float-right" type="submit">Revert to Stock</button>';
+    var buttons = '<button onclick="saveconfig(\'' + filename + '\')" class="btn btn-success m-3 float-right" type="submit">Save Config</button>\
+                   <button onclick="revertconfig(\'' + filename + '\')" class="btn btn-primary m-3 float-right" type="submit">Revert to Stock</button>';
   }
   $('#configcontent').empty();
   $('#configcontent').append('\
@@ -219,24 +219,22 @@ function renderlocal(){
   $('#pagecontent').append('<center><div class="spinner-grow" style="width: 3rem; height: 3rem;" role="status"><span class="sr-only">Loading...</span></div><br><h2>Getting Remote file list</h2></center>');
   socket.emit('getlocal');
 }
-socket.on('renderlocal', function(endpoints,remotemenuversion){
-  console.log(remotemenuversion);
+socket.on('renderlocal', function(endpoints,localfiles,remotemenuversion){
   $('#pagecontent').empty();
   $('#pagecontent').append('\
   <div class="card-group">\
     <div class="card">\
-      <div class="card-header">\
-        Remote Functions\
-      </div>\
       <div class="card-body">\
-      <table class="table table-sm" id="">\
-      </table>\
+        <div class="row">\
+          <div class="col-8">\
+          </div>\
+          <div class="col-4">\
+            <button onclick="dlremote()" class="btn btn-success btn-sm">Download Selected</button>\
+          </div>\
+        </div>\
       </div>\
     </div>\
     <div class="card">\
-      <div class="card-header">\
-        Local Functions\
-      </div>\
       <div class="card-body">\
       <table class="table table-sm" id="">\
       </table>\
@@ -267,7 +265,12 @@ socket.on('renderlocal', function(endpoints,remotemenuversion){
   </div>');
   $.each(endpoints.endpoints, function( index, value ) {
     $.each(value.files, function( arrindex, file ) {
-      $('#remoteassets').append('<tr><td><input type="checkbox" class="form-check-input remotecheck" id="fill"></td><td>' + index + '</td><td><a href="https://github.com/netbootxyz' + value.path + file + '" target="_blank">' + value.path.split('download/')[1] + file + '</a></td></tr>');
+      if (localfiles.includes(value.path + file)){
+        $('#localassets').append('<tr><td><input type="checkbox" class="form-check-input localcheck" value="' + value.path + file + '"></td><td>' + index + '</td><td><a href="https://github.com/netbootxyz' + value.path + file + '" target="_blank">' + value.path.split('download/')[1] + file + '</a></td></tr>');
+      }
+      else{
+        $('#remoteassets').append('<tr><td><input type="checkbox" class="form-check-input remotecheck" value="' + value.path + file + '"></td><td>' + index + '</td><td><a href="https://github.com/netbootxyz' + value.path + file + '" target="_blank">' + value.path.split('download/')[1] + file + '</a></td></tr>');
+      }
     });
   });
 });
@@ -291,3 +294,43 @@ function localclear(){
     this.checked = false;                        
   });
 };
+// Download remote files
+function dlremote(){
+  var allfiles = $('.remotecheck');
+  var dlfiles = [];
+  $.each(allfiles, function( index, value ) {
+    if($(this).is(":checked")){
+      dlfiles.push($(this).val());
+    }
+  }).promise().done(function(){
+    if(dlfiles.length != 0){
+      socket.emit('dlremote',dlfiles);
+    }
+  });
+}
+// Re-render local hook
+socket.on('renderlocalhook', function(){
+  renderlocal();
+});
+
+//// Download Status Bars ////
+socket.on('dldata', function(url, count, stats){
+  $('#statusbar').empty();
+  $('#statusbar').append('\
+  <div class="row">\
+    <div class="col-4">\
+      ' + url.split('download/')[1] + '\
+    </div>\
+    <div class="col-2">\
+      ' + count[0] + ' of ' + count[1] + '\
+    </div>\
+    <div class="col-6">\
+      <div class="progress">\
+        <div class="progress-bar" role="progressbar" style="width: ' + stats.progress + '%;" aria-valuenow="' + stats.progress + '" aria-valuemin="0" aria-valuemax="100"></div>\
+      </div>\
+    </div>\
+  </dev>');
+});
+socket.on('purgestatus', function(){
+  $('#statusbar').empty();
+});

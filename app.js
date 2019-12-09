@@ -9,6 +9,8 @@ var fs = require('fs');
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var isBinaryFile = require("isbinaryfile").isBinaryFile;
+var path = require('path');
+var readdirp = require('readdirp');
 var request = require('request');
 var si = require('systeminformation');
 var { version } = require('./package.json');
@@ -37,7 +39,6 @@ io.on('connection', function(socket){
   socket.on('getdash', function(){
     var tftpcmd = '/usr/sbin/in.tftpd --version';
     var nginxcmd = '/usr/sbin/nginx -v';
-    // Hard code until we have endpoints to ingest
     var dashinfo = {};
     dashinfo['webversion'] = version;
     dashinfo['menuversion'] = fs.readFileSync('/config/menuversion.txt', 'utf8');
@@ -108,11 +109,24 @@ io.on('connection', function(socket){
   // When the endpoints content is requested send it to the client
   socket.on('getlocal', function(filename){
     var remotemenuversion = fs.readFileSync('/config/menuversion.txt', 'utf8');
-    request.get('https://raw.githubusercontent.com/netbootxyz/netboot.xyz/' + remotemenuversion + '/endpoints.yml', function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-            var endpoints = yaml.safeLoad(body);
-            io.sockets.in(socket.id).emit('renderlocal',endpoints,remotemenuversion);
+    request.get('https://raw.githubusercontent.com/netbootxyz/netboot.xyz/' + remotemenuversion + '/endpoints.yml', async function (error, response, body) {
+      if (!error && response.statusCode == 200) {
+        var localfiles = await readdirp.promise('/assets/.');
+        var assets = [];
+        if (localfiles.length != 0){
+          for (var i in localfiles){
+            assets.push('/' + localfiles[i].path);
+          }
         }
+        var endpoints = yaml.safeLoad(body);
+        io.sockets.in(socket.id).emit('renderlocal',endpoints,assets,remotemenuversion);
+      }
+    });
+  });
+  // When remote downloads are requested make folders and download
+  socket.on('dlremote', function(dlfiles){
+    dlremote(dlfiles, function(response){
+      io.sockets.in(socket.id).emit('renderlocalhook');
     });
   });
 });
@@ -146,11 +160,13 @@ async function upgrademenu(version, callback){
   // Download files
   var download_files = ['menus.tar.gz', 'netboot.xyz-undionly.kpxe', 'netboot.xyz.efi', 'netboot.xyz.kpxe'];
   var download_endpoint = 'https://github.com/netbootxyz/netboot.xyz/releases/download/' + version + '/';
+  var downloads = [];
   for (var i in download_files){
     var file = download_files[i];
-    var url = download_endpoint + file;
-    await downloader(url,remote_folder);
+    var url = download_endpoint + file;    
+    downloads.push({'url':url,'path':remote_folder});
   }
+  await downloader(downloads);
   var untarcmd = 'tar xf ' + remote_folder + 'menus.tar.gz -C ' + remote_folder;
   exec(untarcmd, function (err, stdout) {
     fs.unlinkSync(remote_folder + 'menus.tar.gz');
@@ -161,10 +177,40 @@ async function upgrademenu(version, callback){
   });
 }
 
-async function downloader(url, path, callback){
-  const dl = new DownloaderHelper(url, path);
-  dl.on('end', () => console.log('Downloaded ' + url + ' to ' + path));
-  await dl.start();
+// Grab remote files
+async function dlremote(dlfiles, callback){
+  var dlarray = [];
+  for (var i in dlfiles){
+    var dlfile = dlfiles[i];
+    var dlpath = '/assets' + path.dirname(dlfile);
+    // Make destination directory
+    fs.mkdirSync(dlpath, { recursive: true });
+    // Construct array for use in download function
+    var url = 'https://github.com/netbootxyz' + dlfile;
+    dlarray.push({'url':url,'path':dlpath});
+  }
+  await downloader(dlarray);
+  callback(null, 'done');
+}
+
+// downloader loop
+async function downloader(downloads){
+  var total = downloads.length;
+  for (var i in downloads){
+    var value = downloads[i];
+    var url = value.url;
+    var path = value.path;
+    var dloptions = {override:true,retry:{maxRetries:2,delay:5000}};
+    var dl = new DownloaderHelper(url, path, dloptions);
+    dl.on('end', function(){ 
+      console.log('Downloaded ' + url + ' to ' + path);
+    });
+    dl.on('progress', function(stats){ 
+      io.emit('dldata', url, [+i + 1,total], stats);
+    });
+    await dl.start();
+  }
+  io.emit('purgestatus');
 }
 
 // Spin up application on port 3000
