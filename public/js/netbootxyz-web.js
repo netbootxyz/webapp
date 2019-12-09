@@ -30,7 +30,7 @@ socket.on('renderdash', function(response){
   var totalmem = parseFloat(memstats.total/1000000000).toFixed(2);
   var diskbuffer = parseFloat(memstats.buffcache/1000000000).toFixed(2);
   if (menuversion != remotemenuversion){
-    var upgradebutton = '<button style="cursor:pointer;" onclick="upgrademenus(\'' + remotemenuversion + '\')" class="btn btn-success btn-sm">' + remotemenuversion + ' Available</button>'
+    var upgradebutton = '<button onclick="upgrademenus(\'' + remotemenuversion + '\')" class="btn btn-success btn-sm">' + remotemenuversion + ' Available</button>'
   }
   else{
     var upgradebutton = '<button class="btn btn-secondary btn-sm">Up to Date</button>'
@@ -50,7 +50,7 @@ socket.on('renderdash', function(response){
         <table class="table table-hover">\
           <tr><td>Webapp Version: </td><td><a target="_blank" href="https://github.com/netbootxyz/webapp/releases/' + webversion + '">' + webversion + '</a></td></tr>\
           <tr><td>Menus Version:</td><td><a target="_blank" href="https://github.com/netbootxyz/netboot.xyz/releases/' + menuversion + '">' + menuversion + '</a></td></tr>\
-          <tr><td>Upgrade Menus to latest</td><td>' + upgradebutton + '</td></tr>\
+          <tr><td>Upgrade Menus to latest</td><td><div id="upgradebutton">' + upgradebutton + '</div></td></tr>\
         </table>\
         </div>\
       </div>\
@@ -100,7 +100,16 @@ socket.on('renderdash', function(response){
   </div>\
   ');
 });
-
+// Upgrade menu files
+function upgrademenus(version){
+  $('#upgradebutton').empty();
+  $('#upgradebutton').append('<div class="spinner-grow" style="width: 1rem; height: 1rem;" role="status"><span class="sr-only">Loading...</span></div>');
+  socket.emit('upgrademenus', version);
+}
+// Re-render dash hook
+socket.on('renderdashhook', function(){
+  renderdash();
+});
 
 //// Config Page rendering ////
 function renderconfig(){
@@ -206,11 +215,12 @@ function revertconfig(filename){
 
 //// Local rendering ////
 function renderlocal(){
-  $('.nav-item').removeClass('active');
+  $('#pagecontent').empty();
   $('#pagecontent').append('<center><div class="spinner-grow" style="width: 3rem; height: 3rem;" role="status"><span class="sr-only">Loading...</span></div><br><h2>Getting Remote file list</h2></center>');
   socket.emit('getlocal');
 }
 socket.on('renderlocal', function(endpoints,remotemenuversion){
+  console.log(remotemenuversion);
   $('#pagecontent').empty();
   $('#pagecontent').append('\
   <div class="card-group">\

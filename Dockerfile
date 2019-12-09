@@ -9,6 +9,7 @@ RUN \
  apk add --no-cache \
  	git \
 	logrotate \
+	jq \
 	nginx \
 	nodejs \
 	sudo \
