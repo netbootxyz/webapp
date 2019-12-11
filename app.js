@@ -108,21 +108,18 @@ io.on('connection', function(socket){
     });
   });
   // When the endpoints content is requested send it to the client
-  socket.on('getlocal', function(filename){
+  socket.on('getlocal', async function(filename){
     var remotemenuversion = fs.readFileSync('/config/menuversion.txt', 'utf8');
-    request.get('https://raw.githubusercontent.com/netbootxyz/netboot.xyz/' + remotemenuversion + '/endpoints.yml', async function (error, response, body) {
-      if (!error && response.statusCode == 200) {
-        var localfiles = await readdirp.promise('/assets/.');
-        var assets = [];
-        if (localfiles.length != 0){
-          for (var i in localfiles){
-            assets.push('/' + localfiles[i].path);
-          }
-        }
-        var endpoints = yaml.safeLoad(body);
-        io.sockets.in(socket.id).emit('renderlocal',endpoints,assets,remotemenuversion);
+    var endpointsfile = fs.readFileSync('/config/endpoints.yml');
+    var endpoints = yaml.safeLoad(endpointsfile);
+    var localfiles = await readdirp.promise('/assets/.');
+    var assets = [];
+    if (localfiles.length != 0){
+      for (var i in localfiles){
+        assets.push('/' + localfiles[i].path);
       }
-    });
+    }
+    io.sockets.in(socket.id).emit('renderlocal',endpoints,assets,remotemenuversion);
   });
   // When remote downloads are requested make folders and download
   socket.on('dlremote', function(dlfiles){
@@ -136,6 +133,10 @@ io.on('connection', function(socket){
       var file = dlfiles[i];
       fs.unlinkSync('/assets' + file);
       console.log('Deleted /assets' + file);
+      if (fs.existsSync('/assets' + file + '.part2')) {
+        fs.unlinkSync('/assets' + file + '.part2');
+        console.log('Deleted /assets' + file + '.part2');
+      }
     }
     io.sockets.in(socket.id).emit('renderlocalhook');
   });
@@ -176,6 +177,8 @@ async function upgrademenu(version, callback){
     var url = download_endpoint + file;    
     downloads.push({'url':url,'path':remote_folder});
   }
+  // static config for endpoints
+  downloads.push({'url':'https://raw.githubusercontent.com/netbootxyz/netboot.xyz/' + version +'/endpoints.yml','path':'/config/'});
   await downloader(downloads);
   var untarcmd = 'tar xf ' + remote_folder + 'menus.tar.gz -C ' + remote_folder;
   exec(untarcmd, function (err, stdout) {

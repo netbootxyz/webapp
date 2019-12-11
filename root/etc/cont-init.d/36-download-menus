@@ -13,6 +13,9 @@ if [[ ! -f /config/menus/remote/menu.ipxe ]]; then
   echo "[netbootxyz-init] Downloading Netboot.xyz at ${MENU_VERSION}"
   # menu files
   curl -o \
+    /config/endpoints.yml -sL \
+    "https://raw.githubusercontent.com/netbootxyz/netboot.xyz/${MENU_VERSION}/endpoints.yml"
+  curl -o \
     /tmp/menus.tar.gz -sL \
     "https://github.com/netbootxyz/netboot.xyz/releases/download/${MENU_VERSION}/menus.tar.gz"
   tar xf \

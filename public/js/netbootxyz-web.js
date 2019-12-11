@@ -108,7 +108,9 @@ function upgrademenus(version){
 }
 // Re-render dash hook
 socket.on('renderdashhook', function(){
-  renderdash();
+  if($('#upgradebutton').length){
+    renderdash();
+  }
 });
 
 //// Config Page rendering ////
@@ -227,13 +229,23 @@ socket.on('renderlocal', function(endpoints,localfiles,remotemenuversion){
       <div class="card-header">\
         Remote Assets at <a target="_blank" href="https://github.com/netbootxyz/netboot.xyz/releases/' + remotemenuversion + '">' + remotemenuversion + '</a>\
         <span style="float:right;">\
-          <button onclick="remoteselect()" class="btn btn-primary btn-sm mr-2">Select All</button>\
-          <button onclick="remoteclear()" class="btn btn-secondary btn-sm mr-2">Clear Selection</button>\
-          <button onclick="dlremote()" class="btn btn-success btn-sm">Download Selected</button>\
+          <div class="form-row">\
+            <div class="col"><input type="text" class="form-control form-control-sm" id="remotesearch" placeholder="Filter.."></div>\
+            <div class="col"><button onclick="remoteselect()" class="btn btn-primary btn-sm form-control form-control-sm">Select All</button></div>\
+            <div class="col"><button onclick="remoteclear()" class="btn btn-secondary btn-sm form-control form-control-sm">Clear Selection</button></div>\
+            <div class="col"><button onclick="dlremote()" class="btn btn-success btn-sm form-control form-control-sm">Pull Selected</button></div>\
+          </div>\
         </span>\
       </div>\
       <div class="card-body">\
       <table class="table table-sm" id="remoteassets">\
+        <thead>\
+          <tr>\
+            <th>Asset Name</th>\
+            <th>Asset path</th>\
+            <th></th>\
+          </tr>\
+        </thead>\
       </table>\
       </div>\
     </div>\
@@ -241,31 +253,76 @@ socket.on('renderlocal', function(endpoints,localfiles,remotemenuversion){
       <div class="card-header">\
         Local Assets\
         <span style="float:right;">\
-          <button onclick="localselect()" class="btn btn-primary btn-sm mr-2">Select All</button>\
-          <button onclick="localclear()" class="btn btn-secondary btn-sm">Clear Selection</button>\
-          <button onclick="deletelocal()" class="btn btn-danger btn-sm">Delete Selected</button>\
+          <div class="form-row">\
+            <div class="col"><input type="text" class="form-control form-control-sm" id="localsearch" placeholder="Filter.."></div>\
+            <div class="col"><button onclick="localselect()" class="btn btn-primary btn-sm form-control form-control-sm">Select All</button></div>\
+            <div class="col"><button onclick="localclear()" class="btn btn-secondary btn-sm form-control form-control-sm">Clear Selection</button></div>\
+            <div class="col"><button onclick="deletelocal()" class="btn btn-danger btn-sm form-control form-control-sm">Delete Selected</button></div>\
+          </div>\
         </span>\
       </div>\
       <div class="card-body">\
-      <table class="table table-sm" id="localassets">\
+      <table class="table table-sm" id="localassets" style=".dataTables_filter {display:none;}">\
+        <thead>\
+          <tr>\
+            <th>Asset Name</th>\
+            <th>Asset path</th>\
+            <th></th>\
+          </tr>\
+        </thead>\
       </table>\
       </div>\
     </div>\
   </div>');
-  $.each(endpoints.endpoints, function( index, value ) {
+  var tableoptions = {
+    "paging": false,
+    "bInfo" : false,
+    'sDom': 't',
+    "order": [[ 0, "asc" ]]
+  };
+  $("#localassets").dataTable().fnDestroy();
+  $("#remoteassets").dataTable().fnDestroy();
+  var localtable = $('#localassets').DataTable(tableoptions);
+  var remotetable = $('#remoteassets').DataTable(tableoptions);
+  localtable.clear();
+  remotetable.clear();
+  $.each(endpoints.endpoints, function(index,value){
     $.each(value.files, function( arrindex, file ) {
       if (localfiles.includes(value.path + file)){
-        $('#localassets').append('<tr><td><input type="checkbox" class="form-check-input localcheck" value="' + value.path + file + '"></td><td>' + index + '</td><td>' +  value.path.split('download/')[1] + file + '</td></tr>');
+        localtable.row.add( 
+          [
+            index,
+            value.path.split('download/')[1] + file,
+            '<span style="float:right;"><input type="checkbox" class="form-check-input localcheck" value="' + value.path + file + '"></span>'
+
+          ]
+        );
       }
       else{
-        $('#remoteassets').append('<tr><td><input type="checkbox" class="form-check-input remotecheck" value="' + value.path + file + '"></td><td>' + index + '</td><td><a href="https://github.com/netbootxyz' + value.path + file + '" target="_blank">' + value.path.split('download/')[1] + file + '</a></td></tr>');
+        remotetable.row.add( 
+          [
+            index,
+            '<a href="https://github.com/netbootxyz' + value.path + file + '" target="_blank">' + value.path.split('download/')[1] + file + '</a>',
+            '<span style="float:right;"><input type="checkbox" class="form-check-input remotecheck" value="' + value.path + file + '"></span>'
+          ]
+        );
       }
     });
   });
+  remotetable.draw();
+  localtable.draw();
+  $('#localsearch').keyup(function(){
+    localtable.search($(this).val()).draw() ;
+  })
+  $('#remotesearch').keyup(function(){
+    remotetable.search($(this).val()).draw() ;
+  })
 });
 function remoteselect(){   
   $('.remotecheck').each(function() {
-    this.checked = true;                        
+    if (this.style.display != "none"){
+      this.checked = true;
+    }
   });
 };
 function remoteclear(){   
@@ -299,7 +356,9 @@ function dlremote(){
 }
 // Re-render local hook
 socket.on('renderlocalhook', function(){
-  renderlocal();
+  if($('#localassets').length){
+   renderlocal();
+  }
 });
 // Delete local files
 function deletelocal(){
