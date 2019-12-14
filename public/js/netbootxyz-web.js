@@ -133,7 +133,17 @@ socket.on('renderconfig', function(remote_files,local_files,filename,islocal){
         </button>\
         <nav class="collapse bd-links" id="bd-docs-nav">\
       </div>\
-      <div id="configcontent" class="col-12 col-md-9 col-xl-10"><center><h1>Please choose a file to edit</h1></center></div>\
+      <div id="configcontent" class="col-12 col-md-9 col-xl-10">\
+        <center>\
+          <h1>Please choose a file to edit<br>Or<br></h1>\
+          <div class="form-row">\
+            <div class="col-4"></div>\
+            <div class="col-2"><input type="text" class="form-control ipxefilename" placeholder="myfile.ipxe"></div>\
+            <div class="col-2"><button onclick="createipxe()" class="btn btn-primary form-control">Create New</button></div>\
+            <div class="col-4"></div>\
+          </div>\
+        </center>\
+      </div>\
     </div>\
   </div>');
   $(local_files).each(function( index, value ) {
@@ -172,11 +182,11 @@ socket.on('editrenderfile', function(response,filename,metadata){
     var buttons = '';
   }
   else if (metadata == false){
-    var buttons = '<button onclick="saveconfig(\'' + filename + '\')" class="btn btn-success m-3 float-right" type="submit">Save Config</button>';
+    var buttons = '<button onclick="saveconfig(\'' + filename + '\')" class="btn btn-success m-3 float-right">Save Config</button>';
   }
   else if (metadata == true){
-    var buttons = '<button onclick="saveconfig(\'' + filename + '\')" class="btn btn-success m-3 float-right" type="submit">Save Config</button>\
-                   <button onclick="revertconfig(\'' + filename + '\')" class="btn btn-primary m-3 float-right" type="submit">Revert to Stock</button>';
+    var buttons = '<button onclick="saveconfig(\'' + filename + '\')" class="btn btn-success m-3 float-right">Save Config</button>\
+                   <button onclick="revertconfig(\'' + filename + '\')" class="btn btn-danger m-3 float-right">Revert/Delete</button>';
   }
   $('#configcontent').empty();
   $('#configcontent').append('\
@@ -213,6 +223,15 @@ function revertconfig(filename){
   socket.emit('revertconfig',filename);
   $('#pagecontent').empty();
   $('#pagecontent').append('<center><div class="spinner-grow" style="width: 3rem; height: 3rem;" role="status"><span class="sr-only">Loading...</span></div><br><h2>Reverting File</h2></center>');
+}
+// Create a new file
+function createipxe(){
+  var filename = $('.ipxefilename').val();
+  if (filename){
+  socket.emit('createipxe',filename);
+  $('#pagecontent').empty();
+  $('#pagecontent').append('<center><div class="spinner-grow" style="width: 3rem; height: 3rem;" role="status"><span class="sr-only">Loading...</span></div><br><h2>Creating File</h2></center>');
+  }
 }
 
 //// Local rendering ////

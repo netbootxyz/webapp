@@ -98,13 +98,22 @@ io.on('connection', function(socket){
       io.sockets.in(socket.id).emit('renderconfig',remote_files,local_files,filename,true);
     });
   });
-  // When save is requested save it sync files and return user to menu
+  // When revert is requested delete it, sync files and return user to menu
   socket.on('revertconfig', function(filename){
     fs.unlinkSync('/config/menus/local/' + filename);
     layermenu(function(response){
       var local_files = fs.readdirSync('/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
       var remote_files = fs.readdirSync('/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
       io.sockets.in(socket.id).emit('renderconfig',remote_files,local_files);
+    });
+  });
+  // When a create file is 
+  socket.on('createipxe', function(filename){
+    fs.writeFileSync('/config/menus/local/' + filename, '#!ipxe');
+    layermenu(function(response){
+      var local_files = fs.readdirSync('/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+      var remote_files = fs.readdirSync('/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+      io.sockets.in(socket.id).emit('renderconfig',remote_files,local_files,filename,true);
     });
   });
   // When the endpoints content is requested send it to the client
