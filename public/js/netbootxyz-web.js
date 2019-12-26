@@ -281,6 +281,14 @@ socket.on('renderlocal', function(endpoints,localfiles,remotemenuversion){
         </span>\
       </div>\
       <div class="card-body">\
+      <table class="table table-sm" id="untrackedassets" style=".dataTables_filter {display:none;}">\
+        <thead>\
+          <tr>\
+            <th>Untracked Assets</th>\
+            <th></th>\
+          </tr>\
+        </thead>\
+      </table>\
       <table class="table table-sm" id="localassets" style=".dataTables_filter {display:none;}">\
         <thead>\
           <tr>\
@@ -316,6 +324,7 @@ socket.on('renderlocal', function(endpoints,localfiles,remotemenuversion){
 
           ]
         );
+        localfiles.splice( localfiles.indexOf(value.path + file), 1 );
       }
       else{
         remotetable.row.add( 
@@ -328,6 +337,18 @@ socket.on('renderlocal', function(endpoints,localfiles,remotemenuversion){
       }
     });
   });
+  if (localfiles.length != 0){
+    var untrackedtable = $('#untrackedassets').DataTable(tableoptions);
+    $.each(localfiles, function( arrindex, file ) {
+      untrackedtable.row.add( 
+        [
+          '/assets' + file,
+          '<span style="float:right;"><input type="checkbox" class="form-check-input localcheck" value="' + file + '"></span>'
+        ]
+      );
+    });
+    untrackedtable.draw();
+  }
   remotetable.draw();
   localtable.draw();
   $('#localsearch').keyup(function(){
