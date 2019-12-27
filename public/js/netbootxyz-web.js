@@ -106,6 +106,11 @@ function upgrademenus(version){
   $('#upgradebutton').append('<div class="spinner-grow" style="width: 1rem; height: 1rem;" role="status"><span class="sr-only">Loading...</span></div>');
   socket.emit('upgrademenus', version);
 }
+function upgrademenusdev(version){
+  $('#configcontent').empty();
+  $('#configcontent').append('<center><div class="spinner-grow" style="width: 3rem; height: 3rem;" role="status"><span class="sr-only">Loading...</span></div><br><h2>Pulling menus at version requested</h2></center>');
+  socket.emit('upgrademenusdev', version);
+}
 // Re-render dash hook
 socket.on('renderdashhook', function(){
   if($('#upgradebutton').length){
@@ -137,10 +142,15 @@ socket.on('renderconfig', function(remote_files,local_files,filename,islocal){
         <center>\
           <h1>Please choose a file to edit<br>Or<br></h1>\
           <div class="form-row">\
-            <div class="col-4"></div>\
-            <div class="col-2"><input type="text" class="form-control ipxefilename" placeholder="myfile.ipxe"></div>\
-            <div class="col-2"><button onclick="createipxe()" class="btn btn-primary form-control">Create New</button></div>\
-            <div class="col-4"></div>\
+            <div class="col-md-4"></div>\
+            <div class="col-md-2"><input type="text" class="form-control ipxefilename" placeholder="myfile.ipxe"></div>\
+            <div class="col-md-2"><button onclick="createipxe()" class="btn btn-primary form-control">Create New</button></div>\
+            <div class="col-md-4"></div>\
+          </div><br>\
+          <div class="form-row">\
+            <div class="col-md-4"></div>\
+            <div class="col-md-4"><button onclick="devbrowser()" class="btn btn-outline-info form-control">Menu Development Versions</button></div>\
+            <div class="col-md-4"></div>\
           </div>\
         </center>\
       </div>\
@@ -233,6 +243,84 @@ function createipxe(){
   $('#pagecontent').append('<center><div class="spinner-grow" style="width: 3rem; height: 3rem;" role="status"><span class="sr-only">Loading...</span></div><br><h2>Creating File</h2></center>');
   }
 }
+// Render edit window
+function devbrowser(){
+  $('#configcontent').empty();
+  $('#configcontent').append('<center><div class="spinner-grow" style="width: 3rem; height: 3rem;" role="status"><span class="sr-only">Loading...</span></div><br><h2>Getting Remote Development Versions</h2></center>');
+  socket.emit('devgetbrowser');
+}
+socket.on('devrenderbrowser', function(releases,commits){
+  $('#configcontent').empty();
+  $('#configcontent').append('\
+  <div class="card-group">\
+    <div class="card">\
+      <div class="card-header">\
+        Development Commits\
+      </div>\
+      <div class="card-body">\
+      <table class="table table-sm" id="commits">\
+        <thead>\
+          <tr>\
+            <th>Commit</th>\
+            <th></th>\
+          </tr>\
+        </thead>\
+      </table>\
+      </div>\
+    </div>\
+    <div class="card">\
+      <div class="card-header">\
+        Releases\
+      </div>\
+      <div class="card-body">\
+      <table class="table table-sm" id="releases" style=".dataTables_filter {display:none;}">\
+        <thead>\
+          <tr>\
+            <th>Release</th>\
+            <th></th>\
+          </tr>\
+        </thead>\
+      </table>\
+      </div>\
+    </div>\
+  </div>');
+  var tableoptions = {
+    "paging": false,
+    "bInfo" : false,
+    'sDom': 't',
+    "order": []
+  };
+  $("#commits").dataTable().fnDestroy();
+  $("#releases").dataTable().fnDestroy();
+  var commitstable = $('#commits').DataTable(tableoptions);
+  var releasestable = $('#releases').DataTable(tableoptions);
+  commitstable.clear();
+  releasestable.clear();
+  $.each(releases, function(index,value){
+    releasestable.row.add( 
+      [
+        '<a target="_blank" href="' + value.html_url + '">' + value.tag_name + '</a>',
+        '<span style="float:right;"><button onclick="upgrademenusdev(\'' + value.tag_name + '\')" class="btn btn-outline-success btn-sm">Download</button></span>'
+      ]
+    );
+  });
+  $.each(commits, function(index,value){
+    commitstable.row.add( 
+      [
+        '<a target="_blank" href="' + value.html_url + '">' + value.sha + '</a>',
+        '<span style="float:right;"><button onclick="upgrademenusdev(\'' + value.sha + '\')" class="btn btn-outline-success btn-sm">Download</button></span>'
+      ]
+    );
+  });
+  commitstable.draw();
+  releasestable.draw();
+});
+// Re-render menus hook
+socket.on('renderconfighook', function(){
+  if($('#bd-docs-nav').length){
+    renderconfig();
+  }
+});
 
 //// Local rendering ////
 function renderlocal(){

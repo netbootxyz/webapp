@@ -69,6 +69,11 @@ io.on('connection', function(socket){
       io.sockets.in(socket.id).emit('renderdashhook');
     });
   });
+  socket.on('upgrademenusdev', function(version){
+    upgrademenu(version, function(response){
+      io.sockets.in(socket.id).emit('renderconfighook');
+    });
+  });
   // When config info is requested send file list to client
   socket.on('getconfig', function(){
     var local_files = fs.readdirSync('/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
@@ -149,6 +154,15 @@ io.on('connection', function(socket){
     }
     io.sockets.in(socket.id).emit('renderlocalhook');
   });
+  // When Dev Browser is requested reach out to github for versions
+  socket.on('devgetbrowser', async function(){
+    var api_url = 'https://api.github.com/repos/netbootxyz/netboot.xyz/';
+    var options = {headers: {'user-agent': 'node.js'}};
+    var requestPromise = util.promisify(request);
+    var releases = await requestPromise(api_url + 'releases', options);
+    var commits = await requestPromise(api_url + 'commits', options);
+    io.sockets.in(socket.id).emit('devrenderbrowser', JSON.parse(releases.body), JSON.parse(commits.body));
+  });
 });
 
 //// Functions ////
@@ -178,18 +192,31 @@ async function upgrademenu(version, callback){
     fs.unlinkSync(remote_folder + file);
   }
   // Download files
-  var download_files = ['menus.tar.gz', 'netboot.xyz-undionly.kpxe', 'netboot.xyz.efi', 'netboot.xyz.kpxe'];
-  var download_endpoint = 'https://github.com/netbootxyz/netboot.xyz/releases/download/' + version + '/';
   var downloads = [];
-  for (var i in download_files){
-    var file = download_files[i];
+  var rom_files = ['netboot.xyz-undionly.kpxe', 'netboot.xyz.efi', 'netboot.xyz.kpxe'];
+  // This is a commit sha
+  if (version.length == 40){
+    var download_endpoint = 'https://s3.amazonaws.com/dev.boot.netboot.xyz/' + version + '/ipxe/';
+    downloads.push({'url':'https://s3.amazonaws.com/dev.boot.netboot.xyz/' + version + '/menus.tar.gz','path':remote_folder});
+  }
+  // This is a regular release
+  else{
+    var download_endpoint = 'https://github.com/netbootxyz/netboot.xyz/releases/download/' + version + '/';
+    downloads.push({'url':download_endpoint + 'menus.tar.gz','path':remote_folder});
+  }
+  for (var i in rom_files){
+    var file = rom_files[i];
     var url = download_endpoint + file;    
     downloads.push({'url':url,'path':remote_folder});
   }
   // static config for endpoints
   downloads.push({'url':'https://raw.githubusercontent.com/netbootxyz/netboot.xyz/' + version +'/endpoints.yml','path':'/config/'});
+  console.log(downloads);
   await downloader(downloads);
   var untarcmd = 'tar xf ' + remote_folder + 'menus.tar.gz -C ' + remote_folder;
+  if (version.length == 40){
+    var version = 'Development';
+  }
   exec(untarcmd, function (err, stdout) {
     fs.unlinkSync(remote_folder + 'menus.tar.gz');
     fs.writeFileSync('/config/menuversion.txt', version);
@@ -237,24 +264,26 @@ async function downloader(downloads){
       }
     });
     await dl.start();
-    // Part 2 if exists repeat
-    var requestPromise = util.promisify(request);
-    var response = await requestPromise(url + '.part2', {method: 'HEAD'});
-    var s3test = response.headers.server;
-    if (s3test == 'AmazonS3'){
-      var dl2 = new DownloaderHelper(url + '.part2', path, dloptions);
-      dl2.on('end', function(){ 
-        console.log('Downloaded ' + url + '.part2' + ' to ' + path);
-      });
-      dl2.on('progress', function(stats){
-        var currentTime = new Date();
-        var elaspsedTime = currentTime - startTime;
-        if (elaspsedTime > 500) {
-          startTime = currentTime;
-          io.emit('dldata', url, [+i + 1,total], stats);
-        }
-      });
-      await dl2.start();
+    if ( ! url.includes('s3.amazonaws.com')){
+      // Part 2 if exists repeat
+      var requestPromise = util.promisify(request);
+      var response = await requestPromise(url + '.part2', {method: 'HEAD'});
+      var s3test = response.headers.server;
+      if (s3test == 'AmazonS3'){
+        var dl2 = new DownloaderHelper(url + '.part2', path, dloptions);
+        dl2.on('end', function(){ 
+          console.log('Downloaded ' + url + '.part2' + ' to ' + path);
+        });
+        dl2.on('progress', function(stats){
+          var currentTime = new Date();
+          var elaspsedTime = currentTime - startTime;
+          if (elaspsedTime > 500) {
+            startTime = currentTime;
+            io.emit('dldata', url, [+i + 1,total], stats);
+          }
+        });
+        await dl2.start();
+      }
     }
   }
   io.emit('purgestatus');
