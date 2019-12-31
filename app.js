@@ -17,6 +17,17 @@ const util = require('util');
 var { version } = require('./package.json');
 var yaml = require('js-yaml');
 
+// Disable sigs on every startup in remote boot.cfg
+var bootcfgr = '/config/menus/remote/boot.cfg';
+var bootcfgl = '/config/menus/local/boot.cfg';
+var bootcfgm = '/config/menus/boot.cfg';
+if (fs.existsSync(bootcfgr) && ! fs.existsSync(bootcfgl)) {
+  var data = fs.readFileSync(bootcfgr, 'utf8');
+  var disable = data.replace(/set sigs_enabled true/g, 'set sigs_enabled false');
+  fs.writeFileSync(bootcfgr, disable, 'utf8');
+  fs.writeFileSync(bootcfgm, disable, 'utf8');
+}
+
 ////// PATHS //////
 //// Main ////
 app.get("/", function (req, res) {
