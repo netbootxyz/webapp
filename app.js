@@ -18,14 +18,17 @@ var { version } = require('./package.json');
 var yaml = require('js-yaml');
 
 // Disable sigs on every startup in remote boot.cfg
-var bootcfgr = '/config/menus/remote/boot.cfg';
-var bootcfgl = '/config/menus/local/boot.cfg';
-var bootcfgm = '/config/menus/boot.cfg';
-if (fs.existsSync(bootcfgr) && ! fs.existsSync(bootcfgl)) {
-  var data = fs.readFileSync(bootcfgr, 'utf8');
-  var disable = data.replace(/set sigs_enabled true/g, 'set sigs_enabled false');
-  fs.writeFileSync(bootcfgr, disable, 'utf8');
-  fs.writeFileSync(bootcfgm, disable, 'utf8');
+disablesigs();
+function disablesigs(){
+  var bootcfgr = '/config/menus/remote/boot.cfg';
+  var bootcfgl = '/config/menus/local/boot.cfg';
+  var bootcfgm = '/config/menus/boot.cfg';
+  if (fs.existsSync(bootcfgr) && ! fs.existsSync(bootcfgl)) {
+    var data = fs.readFileSync(bootcfgr, 'utf8');
+    var disable = data.replace(/set sigs_enabled true/g, 'set sigs_enabled false');
+    fs.writeFileSync(bootcfgr, disable, 'utf8');
+    fs.writeFileSync(bootcfgm, disable, 'utf8');
+  }
 }
 
 ////// PATHS //////
@@ -222,7 +225,6 @@ async function upgrademenu(version, callback){
   }
   // static config for endpoints
   downloads.push({'url':'https://raw.githubusercontent.com/netbootxyz/netboot.xyz/' + version +'/endpoints.yml','path':'/config/'});
-  console.log(downloads);
   await downloader(downloads);
   var untarcmd = 'tar xf ' + remote_folder + 'menus.tar.gz -C ' + remote_folder;
   if (version.length == 40){
@@ -232,6 +234,7 @@ async function upgrademenu(version, callback){
     fs.unlinkSync(remote_folder + 'menus.tar.gz');
     fs.writeFileSync('/config/menuversion.txt', version);
     layermenu(function(response){
+      disablesigs();
       callback(null, 'done');
     });
   });
