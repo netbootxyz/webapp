@@ -10,6 +10,7 @@ RUN \
  	git \
 	logrotate \
 	jq \
+	nghttp2-dev \
 	nginx \
 	nodejs \
 	sudo \
