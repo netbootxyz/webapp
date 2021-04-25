@@ -236,7 +236,7 @@ function revertconfig(filename){
 }
 // Create a new file
 function createipxe(){
-  var filename = $('.ipxefilename').val();
+  var filename = $('.ipxefilename').val().trim();
   if (filename){
   socket.emit('createipxe',filename);
   $('#pagecontent').empty();
