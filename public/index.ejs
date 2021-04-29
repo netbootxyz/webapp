@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Web Application for customizing netboot.xyz">
+    <meta name="author" content="Netboot.xyz">
+    <title>NETBOOT.XYZ Configuration</title>
+    <!-- Favicon stuff -->
+    <link rel="apple-touch-icon" sizes="57x57" href="<%= baseurl %>public/img/favicon/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="<%= baseurl %>public/img/favicon/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="<%= baseurl %>public/img/favicon/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="<%= baseurl %>public/img/favicon/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="<%= baseurl %>public/img/favicon/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="<%= baseurl %>public/img/favicon/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="<%= baseurl %>public/img/favicon/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="<%= baseurl %>public/img/favicon/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="<%= baseurl %>public/img/favicon/apple-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="192x192"  href="<%= baseurl %>public/img/favicon/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="<%= baseurl %>public/img/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="<%= baseurl %>public/img/favicon/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="<%= baseurl %>public/img/favicon/favicon-16x16.png">
+    <link rel="manifest" href="<%= baseurl %>public/img/favicon/manifest.json">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="<%= baseurl %>public/img/favicon/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="<%= baseurl %>public/vendor/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<%= baseurl %>public/vendor/css/docs.min.css">
+    <link rel="stylesheet" href="<%= baseurl %>public/vendor/css/dataTables.bootstrap4.min.css">
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <div class="navbar-brand" style="cursor:pointer;" onclick="renderdash()">
+        <img src="<%= baseurl %>public/img/logo.png" width="30" height="30" class="d-inline-block align-top" alt="">
+        NETBOOT.XYZ
+      </div>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item active">
+            <div class="nav-link" style="cursor:pointer;" onclick="renderconfig()" >Menus</div>
+          </li>
+          <li class="nav-item active">
+            <div class="nav-link" style="cursor:pointer;" onclick="renderlocal()" >Local Assets</div>
+          </li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+          <div id="statusbar" style="width:500px" ></div>
+        </ul>
+      </div>
+    </nav>
+    <!-- Main page content -->
+    <div id="pagecontent"></div>
+    <!-- Bootstrap core JavaScript -->
+    <script src="<%= baseurl %>public/vendor/js/jquery.min.js"></script>
+    <script src="<%= baseurl %>public/vendor/js/popper.min.js"></script>
+    <script src="<%= baseurl %>public/vendor/js/bootstrap.min.js"></script>
+    <!-- Plugin JavaScript -->
+    <script src="<%= baseurl %>socket.io/socket.io.js"></script>
+    <script src="<%= baseurl %>public/vendor/js/ace.js"></script>
+    <script src="<%= baseurl %>public/vendor/js/jquery.dataTables.min.js"></script>
+    <script src="<%= baseurl %>public/vendor/js/dataTables.bootstrap4.min.js"></script>
+    <!-- Our JavaScript -->
+    <script src="<%= baseurl %>netbootxyz-web.js"></script>
+  </body>
+</html>

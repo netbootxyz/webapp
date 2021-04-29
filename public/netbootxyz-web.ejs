@@ -6,7 +6,7 @@
 var host = window.location.hostname; 
 var port = window.location.port;
 var protocol = window.location.protocol;
-var socket = io.connect(protocol + '//' + host + ':' + port, {});
+var socket = io.connect(protocol + '//' + host + ':' + port, {path: "<%= baseurl %>socket.io"});
 // If the page is being loaded for the first time render in the homepage
 $(document).ready(function(){renderdash()})
 

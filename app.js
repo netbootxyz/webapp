@@ -1,13 +1,14 @@
 // Netboot.xyz
 // Main Node.js app
 
+var baseurl = process.env.SUBFOLDER || '/';
 var app = require('express')();
 var { DownloaderHelper } = require('node-downloader-helper');
 var exec = require('child_process').exec;
 var express = require('express');
 var fs = require('fs');
 var http = require('http').Server(app);
-var io = require('socket.io')(http);
+var io = require('socket.io')(http, {path: baseurl + 'socket.io'});
 var isBinaryFile = require("isbinaryfile").isBinaryFile;
 var path = require('path');
 var readdirp = require('readdirp');
@@ -16,6 +17,8 @@ var si = require('systeminformation');
 const util = require('util');
 var { version } = require('./package.json');
 var yaml = require('js-yaml');
+var baserouter = express.Router();
+let ejs = require('ejs');
 
 // Disable sigs on every startup in remote boot.cfg
 disablesigs();
@@ -33,13 +36,14 @@ function disablesigs(){
 
 ////// PATHS //////
 //// Main ////
-app.get("/", function (req, res) {
-  res.sendFile(__dirname + '/public/index.html');
+baserouter.get("/", function (req, res) {
+  res.render(__dirname + '/public/index.ejs', {baseurl: baseurl});
+});
+baserouter.get("/netbootxyz-web.js", function (req, res) {
+  res.render(__dirname + '/public/netbootxyz-web.ejs', {baseurl: baseurl});
 });
 //// Public JS and CSS ////
-app.use('/public', express.static(__dirname + '/public'));
-
-
+baserouter.use('/public', express.static(__dirname + '/public'));
 
 // Socket IO connection
 io.on('connection', function(socket){
@@ -304,6 +308,7 @@ async function downloader(downloads){
 }
 
 // Spin up application on port 3000
+app.use(baseurl, baserouter);
 http.listen(3000, function(){
   console.log('listening on *:3000');
 });
