@@ -143,7 +143,7 @@ io.on('connection', function(socket){
   socket.on('getlocal', async function(filename){
     var remotemenuversion = fs.readFileSync('/config/menuversion.txt', 'utf8');
     var endpointsfile = fs.readFileSync('/config/endpoints.yml');
-    var endpoints = yaml.safeLoad(endpointsfile);
+    var endpoints = yaml.load(endpointsfile);
     var localfiles = await readdirp.promise('/assets/.');
     var assets = [];
     if (localfiles.length != 0){

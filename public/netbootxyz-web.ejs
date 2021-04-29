@@ -428,12 +428,14 @@ socket.on('renderlocal', function(endpoints,localfiles,remotemenuversion){
   if (localfiles.length != 0){
     var untrackedtable = $('#untrackedassets').DataTable(tableoptions);
     $.each(localfiles, function( arrindex, file ) {
-      untrackedtable.row.add( 
-        [
-          '/assets' + file,
-          '<span style="float:right;"><input type="checkbox" class="form-check-input localcheck" value="' + file + '"></span>'
-        ]
-      );
+      if (!file.endsWith('.part2')) {
+        untrackedtable.row.add( 
+          [
+            '/assets' + file,
+            '<span style="float:right;"><input type="checkbox" class="form-check-input localcheck" value="' + file + '"></span>'
+          ]
+        );
+      }
     });
     untrackedtable.draw();
   }
