@@ -10,7 +10,7 @@ docker run -d \
   -p 8080:80 \
   -p 3000:3000 \
   -p 8000:8000  \
-  netbootxyz/webapp-dev
+  ghcr.io/netbootxyz/webapp-dev
 ```
 
 * Port 8000- Development interface
