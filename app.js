@@ -211,7 +211,16 @@ async function upgrademenu(version, callback){
   }
   // Download files
   var downloads = [];
-  var rom_files = ['netboot.xyz-undionly.kpxe', 'netboot.xyz.efi', 'netboot.xyz.kpxe'];
+  var rom_files = ['netboot.xyz.kpxe',
+                   'netboot.xyz-undionly.kpxe',
+                   'netboot.xyz.efi',
+                   'netboot.xyz-snp.efi',
+                   'netboot.xyz-snponly.efi',
+                   'netboot.xyz-arm64.efi',
+                   'netboot.xyz-arm64-snp.efi',
+                   'netboot.xyz-arm64-snponly.efi',
+                   'netboot.xyz-rpi4-snp.efi'];
+
   // This is a commit sha
   if (version.length == 40){
     var download_endpoint = 'https://s3.amazonaws.com/dev.boot.netboot.xyz/' + version + '/ipxe/';
