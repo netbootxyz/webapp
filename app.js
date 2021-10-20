@@ -40,6 +40,7 @@ baserouter.get("/", function (req, res) {
   res.render(__dirname + '/public/index.ejs', {baseurl: baseurl});
 });
 baserouter.get("/netbootxyz-web.js", function (req, res) {
+  res.setHeader("Content-Type", "application/javascript");
   res.render(__dirname + '/public/netbootxyz-web.ejs', {baseurl: baseurl});
 });
 //// Public JS and CSS ////
