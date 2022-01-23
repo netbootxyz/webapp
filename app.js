@@ -296,8 +296,8 @@ async function downloader(downloads){
       // Part 2 if exists repeat
       var requestPromise = util.promisify(request);
       var response = await requestPromise(url + '.part2', {method: 'HEAD'});
-      var s3test = response.headers.server;
-      if (s3test == 'AmazonS3'){
+      var urltest = response.headers.server;
+      if (urltest == 'AmazonS3' || urltest == 'Windows-Azure-Blob/1.0 Microsoft-HTTPAPI/2.0') {
         var dl2 = new DownloaderHelper(url + '.part2', path, dloptions);
         dl2.on('end', function(){ 
           console.log('Downloaded ' + url + '.part2' + ' to ' + path);
