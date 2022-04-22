@@ -219,8 +219,7 @@ async function upgrademenu(version, callback){
                    'netboot.xyz-snponly.efi',
                    'netboot.xyz-arm64.efi',
                    'netboot.xyz-arm64-snp.efi',
-                   'netboot.xyz-arm64-snponly.efi',
-                   'netboot.xyz-rpi4-snp.efi'];
+                   'netboot.xyz-arm64-snponly.efi'];
 
   // This is a commit sha
   if (version.length == 40){
