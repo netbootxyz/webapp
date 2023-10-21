@@ -288,9 +288,15 @@ async function downloader(downloads){
     var path = value.path;
     var dloptions = {override:true,retry:{maxRetries:2,delay:5000}};
     var dl = new DownloaderHelper(url, path, dloptions);
+
     dl.on('end', function(){ 
       console.log('Downloaded ' + url + ' to ' + path);
     });
+
+    dl.on('error', function(error) {
+      console.error('Download failed:', error);
+    });
+
     dl.on('progress', function(stats){
       var currentTime = new Date();
       var elaspsedTime = currentTime - startTime;
@@ -299,6 +305,7 @@ async function downloader(downloads){
         io.emit('dldata', url, [+i + 1,total], stats);
       }
     });
+    
     await dl.start();
     if ( ! url.includes('s3.amazonaws.com')){
       // Part 2 if exists repeat
