@@ -305,7 +305,11 @@ async function downloader(downloads){
         io.emit('dldata', url, [+i + 1,total], stats);
       }
     });
-    
+
+    await dl.start().catch(error => {
+      console.error('Download failed:', error);
+    });
+
     await dl.start();
     if ( ! url.includes('s3.amazonaws.com')){
       // Part 2 if exists repeat
