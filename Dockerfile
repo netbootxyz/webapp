@@ -1,35 +1,52 @@
-FROM lsiobase/cloud9:alpine
+FROM alpine:3.18
+
+# set version label
+ARG BUILD_DATE
+ARG VERSION
+ARG WEBAPP_VERSION
+LABEL build_version="netboot.xyz version: ${VERSION} Build-date: ${BUILD_DATE}"
+LABEL maintainer="antonym"
 
 RUN \
- echo "**** install build packages ****" && \
+ apk upgrade --no-cache && \
  apk add --no-cache --virtual=build-dependencies \
-	curl \
-	nodejs-npm && \
+        nodejs npm && \
  echo "**** install runtime packages ****" && \
  apk add --no-cache \
- 	git \
-	logrotate \
-	jq \
-	nghttp2-dev \
-	nginx \
-	nodejs \
-	sudo \
-	tftp-hpa && \
- echo "**** install WebApp ****" && \
- git clone https://github.com/netbootxyz/webapp.git /code && \
- npm config set unsafe-perm true && \
- npm i npm@latest -g && \
- npm install --prefix /code && \
- npm install -g nodemon && \
- echo "**** cleanup ****" && \
- apk del --purge \
-	build-dependencies && \
- rm -rf \
-	/tmp/*
+        bash \
+        busybox \
+        curl \
+        git \
+        jq \
+        nghttp2-dev \
+        nginx \
+        nodejs \
+        shadow \
+        sudo \
+        supervisor \
+        syslog-ng \
+        tar \
+        tftp-hpa
 
-# copy local files
+RUN \
+ groupmod -g 1000 users && \
+ useradd -u 911 -U -d /config -s /bin/false nbxyz && \
+ usermod -G users nbxyz && \
+ mkdir /app \
+       /config \
+       /defaults 
+
+COPY . /app
+
+RUN \
+ npm install --prefix /app
+
+ENV TFTPD_OPTS=''
+
+EXPOSE 3000
+EXPOSE 8080
+
 COPY root/ /
 
-#App runs on port 3000 development interface on port 8000
-EXPOSE 3000
-EXPOSE 8000
+# default command
+CMD ["sh","/start.sh"]

@@ -1,4 +1,4 @@
-// Netboot.xyz
+// netboot.xyz
 // Main Node.js app
 
 var baseurl = process.env.SUBFOLDER || '/';
@@ -12,7 +12,7 @@ var io = require('socket.io')(http, {path: baseurl + 'socket.io'});
 var isBinaryFile = require("isbinaryfile").isBinaryFile;
 var path = require('path');
 var readdirp = require('readdirp');
-var request = require('request');
+var fetch = require('node-fetch');
 var si = require('systeminformation');
 const util = require('util');
 var { version } = require('./package.json');
@@ -62,26 +62,36 @@ io.on('connection', function(socket){
     var dashinfo = {};
     dashinfo['webversion'] = version;
     dashinfo['menuversion'] = fs.readFileSync('/config/menuversion.txt', 'utf8');
-    request.get('https://api.github.com/repos/netbootxyz/netboot.xyz/releases/latest', {headers: {'user-agent': 'node.js'}}, function (error, response, body) {
-      dashinfo['remotemenuversion'] = JSON.parse(body).tag_name;
-      si.cpu(function(cpu) {
-        dashinfo['cpu'] = cpu;
-        si.mem(function(mem) {
-          dashinfo['mem'] = mem;
-          si.currentLoad(function(currentLoad) {
-            dashinfo['CPUpercent'] = currentLoad.currentload_user;
-            exec(tftpcmd, function (err, stdout) {
-              dashinfo['tftpversion'] = stdout;
-              exec(nginxcmd, function (err, stdout, stderr) {
-                 dashinfo['nginxversion'] = stderr;
-                 io.sockets.in(socket.id).emit('renderdash',dashinfo);
-              });
-            });  
+    fetch('https://api.github.com/repos/netbootxyz/netboot.xyz/releases/latest', {headers: {'user-agent': 'node.js'}})
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(body => {
+        dashinfo['remotemenuversion'] = body.tag_name;
+        si.cpu(function(cpu) {
+          dashinfo['cpu'] = cpu;
+          si.mem(function(mem) {
+            dashinfo['mem'] = mem;
+            si.currentLoad(function(currentLoad) {
+              dashinfo['CPUpercent'] = currentLoad.currentload_user;
+              exec(tftpcmd, function (err, stdout) {
+                dashinfo['tftpversion'] = stdout;
+                exec(nginxcmd, function (err, stdout, stderr) {
+                   dashinfo['nginxversion'] = stderr;
+                   io.sockets.in(socket.id).emit('renderdash',dashinfo);
+                });
+              });  
+            });
           });
-        });
+        });  
+      })
+      .catch(error => {
+        console.log('There was a problem with the fetch operation: ' + error.message);
       });
     });
-  });
   // When upgrade is requested run it
   socket.on('upgrademenus', function(version){
     upgrademenu(version, function(response){
@@ -177,9 +187,8 @@ io.on('connection', function(socket){
   socket.on('devgetbrowser', async function(){
     var api_url = 'https://api.github.com/repos/netbootxyz/netboot.xyz/';
     var options = {headers: {'user-agent': 'node.js'}};
-    var requestPromise = util.promisify(request);
-    var releases = await requestPromise(api_url + 'releases', options);
-    var commits = await requestPromise(api_url + 'commits', options);
+    var releases = await fetch(api_url + 'releases', options).then(res => res.json());
+    var commits = await fetch(api_url + 'commits', options).then(res => res.json());
     io.sockets.in(socket.id).emit('devrenderbrowser', JSON.parse(releases.body), JSON.parse(commits.body));
   });
 });
@@ -293,8 +302,7 @@ async function downloader(downloads){
     await dl.start();
     if ( ! url.includes('s3.amazonaws.com')){
       // Part 2 if exists repeat
-      var requestPromise = util.promisify(request);
-      var response = await requestPromise(url + '.part2', {method: 'HEAD'});
+      var response = await fetch(url + '.part2', {method: 'HEAD'});
       var urltest = response.headers.server;
       if (urltest == 'AmazonS3' || urltest == 'Windows-Azure-Blob/1.0 Microsoft-HTTPAPI/2.0') {
         var dl2 = new DownloaderHelper(url + '.part2', path, dloptions);
