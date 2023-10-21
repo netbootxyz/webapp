@@ -1,0 +1,2 @@
+opencollective: https://opencollective.com/netbootxyz/donate
+github: https://github.com/sponsors/netbootxyz
