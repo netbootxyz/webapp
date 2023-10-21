@@ -184,12 +184,35 @@ io.on('connection', function(socket){
     io.sockets.in(socket.id).emit('renderlocalhook');
   });
   // When Dev Browser is requested reach out to github for versions
-  socket.on('devgetbrowser', async function(){
+  socket.on('devGetBrowser', async function(){
     var api_url = 'https://api.github.com/repos/netbootxyz/netboot.xyz/';
     var options = {headers: {'user-agent': 'node.js'}};
-    var releases = await fetch(api_url + 'releases', options).then(res => res.json());
-    var commits = await fetch(api_url + 'commits', options).then(res => res.json());
-    io.sockets.in(socket.id).emit('devrenderbrowser', JSON.parse(releases.body), JSON.parse(commits.body));
+  
+    fetch(api_url + 'releases', options)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(releases => {
+        fetch(api_url + 'commits', options)
+          .then(res => {
+            if (!res.ok) {
+              throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            return res.json();
+          })
+          .then(commits => {
+            io.sockets.in(socket.id).emit('devRenderBrowser', releases, commits);
+          })
+          .catch(error => {
+            console.log('There was a problem with the fetch operation: ' + error.message);
+          });
+      })
+      .catch(error => {
+        console.log('There was a problem with the fetch operation: ' + error.message);
+      });
   });
 });
 
