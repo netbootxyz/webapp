@@ -319,7 +319,6 @@ async function downloader(downloads){
       console.error('Download failed:', error);
     });
 
-    await dl.start();
     if ( ! url.includes('s3.amazonaws.com')){
       // Part 2 if exists repeat
       var response = await fetch(url + '.part2', {method: 'HEAD'});
