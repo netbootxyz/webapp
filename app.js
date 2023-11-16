@@ -323,7 +323,7 @@ async function downloader(downloads){
     if ( ! url.includes('s3.amazonaws.com')){
       // Part 2 if exists repeat
       var response = await fetch(url + '.part2', {method: 'HEAD'});
-      var urltest = response.headers.server;
+      var urltest = response.headers.get('server');
       if (urltest == 'AmazonS3' || urltest == 'Windows-Azure-Blob/1.0 Microsoft-HTTPAPI/2.0') {
         var dl2 = new DownloaderHelper(url + '.part2', path, dloptions);
         dl2.on('end', function(){ 
