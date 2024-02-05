@@ -343,9 +343,19 @@ async function downloader(downloads){
   io.emit('purgestatus');
 }
 
-// Spin up application on port 3000 or set to WEB_APP_PORT env variable
 app.use(baseurl, baserouter);
-const port = process.env.WEB_APP_PORT || 3000;
+
+// Spin up application on port 3000 or set to WEB_APP_PORT env variable
+
+const defaultPort = 3000;
+
+let port = process.env.WEB_APP_PORT;
+
+if (!Number.isInteger(Number(port)) || port < 1 || port > 65535) {
+  console.warn(`Invalid port "${port}" in environment variable WEB_APP_PORT. Using default port ${defaultPort} instead.`);
+  port = defaultPort;
+}
+
 http.listen(port, function(){
   console.log('listening on *:' + port);
 });
