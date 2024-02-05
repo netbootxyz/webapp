@@ -343,8 +343,9 @@ async function downloader(downloads){
   io.emit('purgestatus');
 }
 
-// Spin up application on port 3000
+// Spin up application on port 3000 or set to WEB_APP_PORT env variable
 app.use(baseurl, baserouter);
-http.listen(3000, function(){
-  console.log('listening on *:3000');
+const port = process.env.WEB_APP_PORT || 3000;
+http.listen(port, function(){
+  console.log('listening on *:' + port);
 });
