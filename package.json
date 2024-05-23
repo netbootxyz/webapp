@@ -14,7 +14,7 @@
   "license": "Apache-2.0",
   "homepage": "https://netboot.xyz",
   "dependencies": {
-    "ejs": "3.1.9",
+    "ejs": "3.1.10",
     "express": "4.19.2",
     "http": "0.0.0",
     "isbinaryfile": "5.0.2",
