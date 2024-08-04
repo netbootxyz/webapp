@@ -57,7 +57,7 @@ io.on('connection', function(socket){
   ///////////////////////////
   // When dashboard info is requested send to client
   socket.on('getdash', function(){
-    var tftpcmd = '/usr/sbin/dnsmasq --version | head -n1 | cut -d ' ' -f 1-3';
+    var tftpcmd = '/usr/sbin/dnsmasq --version | head -n1';
     var nginxcmd = '/usr/sbin/nginx -v';
     var dashinfo = {};
     dashinfo['webversion'] = version;
