@@ -4,6 +4,10 @@
 var baseurl = process.env.SUBFOLDER || '/';
 var app = require('express')();
 var { DownloaderHelper } = require('node-downloader-helper');
+const { HttpProxyAgent } = require('http-proxy-agent');
+const { HttpsProxyAgent } = require('https-proxy-agent');
+const { URL } = require('url');
+const getProxyForUrl = require('proxy-from-env').getProxyForUrl;
 var exec = require('child_process').exec;
 var express = require('express');
 var fs = require('fs');
@@ -11,7 +15,7 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http, {path: baseurl + 'socket.io'});
 var isBinaryFile = require("isbinaryfile").isBinaryFile;
 var path = require('path');
-var readdirp = require('readdirp');
+let {readdirp} = require('readdirp');
 var fetch = require('node-fetch');
 var si = require('systeminformation');
 const util = require('util');
@@ -32,6 +36,26 @@ function disablesigs(){
     fs.writeFileSync(bootcfgr, disable, 'utf8');
     fs.writeFileSync(bootcfgm, disable, 'utf8');
   }
+}
+
+function getProxyAgentFromUrl(request_url, request_options=false) {
+  const proxy_url = getProxyForUrl(request_url);
+  if(!proxy_url) {
+    return false;
+  }
+
+  const protocol = new URL(request_url).protocol;
+  let agent;
+
+  if (protocol === 'https:') {
+    agent = new HttpsProxyAgent(proxy_url);
+    return request_options ? { httpsRequestOptions: { agent } } : agent;
+  } else if (protocol === 'http:') {
+    agent = new HttpProxyAgent(proxy_url);
+    return request_options ? { httpRequestOptions: { agent } } : agent;
+  }
+
+  return false;
 }
 
 ////// PATHS //////
@@ -60,9 +84,11 @@ io.on('connection', function(socket){
     var tftpcmd = '/usr/sbin/dnsmasq --version | head -n1';
     var nginxcmd = '/usr/sbin/nginx -v';
     var dashinfo = {};
+    const fetch_uri = 'https://api.github.com/repos/netbootxyz/netboot.xyz/releases/latest';
+    var fetch_opts = {headers:{'user-agent':'node.js'},agent:getProxyAgentFromUrl(fetch_uri,false)};
     dashinfo['webversion'] = version;
     dashinfo['menuversion'] = fs.readFileSync('/config/menuversion.txt', 'utf8');
-    fetch('https://api.github.com/repos/netbootxyz/netboot.xyz/releases/latest', {headers: {'user-agent': 'node.js'}})
+    fetch(fetch_uri, fetch_opts)
       .then(response => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -83,10 +109,10 @@ io.on('connection', function(socket){
                    dashinfo['nginxversion'] = stderr;
                    io.sockets.in(socket.id).emit('renderdash',dashinfo);
                 });
-              });  
+              });
             });
           });
-        });  
+        });
       })
       .catch(error => {
         console.log('There was a problem with the fetch operation: ' + error.message);
@@ -141,7 +167,7 @@ io.on('connection', function(socket){
       io.sockets.in(socket.id).emit('renderconfig',remote_files,local_files);
     });
   });
-  // When a create file is 
+  // When a create file is
   socket.on('createipxe', function(filename){
     fs.writeFileSync('/config/menus/local/' + filename, '#!ipxe');
     layermenu(function(response){
@@ -155,7 +181,14 @@ io.on('connection', function(socket){
     var remotemenuversion = fs.readFileSync('/config/menuversion.txt', 'utf8');
     var endpointsfile = fs.readFileSync('/config/endpoints.yml');
     var endpoints = yaml.load(endpointsfile);
-    var localfiles = await readdirp.promise('/assets/.');
+    // Wrap readdirp in a promise
+    var localfiles = await new Promise((resolve, reject) => {
+      const entries = [];
+      readdirp('/assets/.')
+        .on('data', (entry) => entries.push(entry))
+        .on('end', () => resolve(entries))
+        .on('error', (error) => reject(error));
+    });
     var assets = [];
     if (localfiles.length != 0){
       for (var i in localfiles){
@@ -185,8 +218,8 @@ io.on('connection', function(socket){
   });
   // When Dev Browser is requested reach out to github for versions
   socket.on('devgetbrowser', async function(){
-    var api_url = 'https://api.github.com/repos/netbootxyz/netboot.xyz/';
-    var options = {headers: {'user-agent': 'node.js'}};
+    const api_url = 'https://api.github.com/repos/netbootxyz/netboot.xyz/';
+    var options = {headers:{'user-agent':'node.js'},agent:getProxyAgentFromUrl(api_url,false)};
     var releasesResponse = await fetch(api_url + 'releases', options);
     if (!releasesResponse.ok) {
       throw new Error(`HTTP error! status: ${releasesResponse.status}`);
@@ -251,7 +284,7 @@ async function upgrademenu(version, callback){
   }
   for (var i in rom_files){
     var file = rom_files[i];
-    var url = download_endpoint + file;    
+    var url = download_endpoint + file;
     downloads.push({'url':url,'path':remote_folder});
   }
   // static config for endpoints
@@ -295,10 +328,11 @@ async function downloader(downloads){
     var value = downloads[i];
     var url = value.url;
     var path = value.path;
-    var dloptions = {override:true,retry:{maxRetries:2,delay:5000}};
+    var agent = getProxyAgentFromUrl(url, true);
+    var dloptions = Object.assign({}, {override:true,retry:{maxRetries:2,delay:5000}}, agent);
     var dl = new DownloaderHelper(url, path, dloptions);
 
-    dl.on('end', function(){ 
+    dl.on('end', function(){
       console.log('Downloaded ' + url + ' to ' + path);
     });
 
@@ -321,11 +355,11 @@ async function downloader(downloads){
 
     if ( ! url.includes('s3.amazonaws.com')){
       // Part 2 if exists repeat
-      var response = await fetch(url + '.part2', {method: 'HEAD'});
+      var response = await fetch(url + '.part2',{method:'HEAD',agent:getProxyAgentFromUrl(url,false)});
       var urltest = response.headers.get('server');
       if (urltest == 'AmazonS3' || urltest == 'Windows-Azure-Blob/1.0 Microsoft-HTTPAPI/2.0') {
         var dl2 = new DownloaderHelper(url + '.part2', path, dloptions);
-        dl2.on('end', function(){ 
+        dl2.on('end', function(){
           console.log('Downloaded ' + url + '.part2' + ' to ' + path);
         });
         dl2.on('progress', function(stats){
