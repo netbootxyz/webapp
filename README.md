@@ -23,7 +23,7 @@ docker build . -t netbootxyz-webapp
 ```bash
 docker run -d \
   --name=netbootxyz-webapp \
-  -e MENU_VERSION=2.0.73             `# optional` \
+  -e MENU_VERSION=2.0.84             `# optional` \
   -p 3000:3000                       `# sets webapp port` \
   -p 69:69/udp                       `# sets tftp port` \
   -p 8080:80                         `# optional` \
@@ -33,9 +33,9 @@ docker run -d \
   netbootxyz-webapp
 ```
 
-* Port 3000- Web Application
-* Port 8080- NGINX Webserver for local asset hosting
-* Port 69- TFTP server for menus/kpxe files
+* Port 3000: Web Application
+* Port 8080: NGINX Webserver for local asset hosting
+* Port 69: TFTP server for menus/kpxe files
 
 ## Running the latest webapp-dev build
 
