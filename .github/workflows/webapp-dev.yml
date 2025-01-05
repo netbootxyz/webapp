@@ -10,7 +10,7 @@ jobs:
 
     - name: Checkout docker-netbootxyz for container source files
       uses: actions/checkout@v4
-      repository: https://github.com/netbootxyz/docker-netbootxyz
+      repository: netbootxyz/docker-netbootxyz
       path: docker-netbootxyz
 
     - name: Set up Docker Buildx
