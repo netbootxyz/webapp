@@ -1,0 +1,25 @@
+name: build
+on:
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: '0'
+
+    - name: Checkout docker-netbootxyz for container source files
+      uses: actions/checkout@v4
+      with:
+        repository: netbootxyz/docker-netbootxyz
+        path: docker-netbootxyz
+
+    - name: Build the Docker image
+      run: docker build .
