@@ -7,7 +7,7 @@ ARG WEBAPP_VERSION
 
 LABEL build_version="netboot.xyz version: ${VERSION} Build-date: ${BUILD_DATE}"
 LABEL maintainer="antonym"
-LABEL org.opencontainers.image.description netboot.xyz official docker container - Your favorite operating systems in one place. A network-based bootable operating system installer based on iPXE.
+LABEL org.opencontainers.image.description="netboot.xyz official docker container - Your favorite operating systems in one place. A network-based bootable operating system installer based on iPXE."
 
 RUN \
  apk add --no-cache \
