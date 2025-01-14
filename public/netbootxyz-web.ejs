@@ -19,7 +19,7 @@ function renderdash(){
 }
 socket.on('renderdash', function(response){
   var tftpversion = response.tftpversion;
-  var nginxversion = response.nginxversion;
+  var webserverversion = response.webserverversion;
   var webversion = response.webversion;
   var menuversion = response.menuversion;
   var remotemenuversion = response.remotemenuversion;
@@ -61,7 +61,7 @@ socket.on('renderdash', function(response){
         <div class="card-body">\
         <table class="table table-hover">\
           <tr><td>TFTP:</td><td>' + tftpversion + '</td></tr>\
-          <tr><td>WebServer:</td><td>' + nginxversion + '</td></tr>\
+          <tr><td>WebServer:</td><td>' + webserverversion + '</td></tr>\
         </table>\
         </div>\
       </div>\

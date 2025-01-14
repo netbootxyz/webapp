@@ -2,6 +2,7 @@
 // Main Node.js app
 
 var baseurl = process.env.SUBFOLDER || '/';
+var datapath = process.env.DATAPATH || '/';
 var app = require('express')();
 var { DownloaderHelper } = require('node-downloader-helper');
 var exec = require('child_process').exec;
@@ -23,9 +24,9 @@ let ejs = require('ejs');
 // Disable sigs on every startup in remote boot.cfg
 disablesigs();
 function disablesigs(){
-  var bootcfgr = '/config/menus/remote/boot.cfg';
-  var bootcfgl = '/config/menus/local/boot.cfg';
-  var bootcfgm = '/config/menus/boot.cfg';
+  var bootcfgr = datapath + '/config/menus/remote/boot.cfg';
+  var bootcfgl = datapath + '/config/menus/local/boot.cfg';
+  var bootcfgm = datapath + '/config/menus/boot.cfg';
   if (fs.existsSync(bootcfgr) && ! fs.existsSync(bootcfgl)) {
     var data = fs.readFileSync(bootcfgr, 'utf8');
     var disable = data.replace(/set sigs_enabled true/g, 'set sigs_enabled false');
@@ -57,11 +58,11 @@ io.on('connection', function(socket){
   ///////////////////////////
   // When dashboard info is requested send to client
   socket.on('getdash', function(){
-    var tftpcmd = '/usr/sbin/dnsmasq --version | head -n1';
-    var nginxcmd = '/usr/sbin/nginx -v';
+    var tftpcmd = process.env.TFTPCOMMAND || '/usr/sbin/dnsmasq --version | head -n1';
+    var webservercmd = process.env.WEBSERVERCOMMAND || '/usr/sbin/nginx -v';
     var dashinfo = {};
     dashinfo['webversion'] = version;
-    dashinfo['menuversion'] = fs.readFileSync('/config/menuversion.txt', 'utf8');
+    dashinfo['menuversion'] = fs.readFileSync(datapath + '/config/menuversion.txt', 'utf8');
     fetch('https://api.github.com/repos/netbootxyz/netboot.xyz/releases/latest', {headers: {'user-agent': 'node.js'}})
       .then(response => {
         if (!response.ok) {
@@ -79,8 +80,8 @@ io.on('connection', function(socket){
               dashinfo['CPUpercent'] = currentLoad.currentload_user;
               exec(tftpcmd, function (err, stdout) {
                 dashinfo['tftpversion'] = stdout;
-                exec(nginxcmd, function (err, stdout, stderr) {
-                   dashinfo['nginxversion'] = stderr;
+                exec(webservercmd, function (err, stdout, stderr) {
+                   dashinfo['webserverversion'] = stdout;
                    io.sockets.in(socket.id).emit('renderdash',dashinfo);
                 });
               });  
@@ -105,13 +106,13 @@ io.on('connection', function(socket){
   });
   // When config info is requested send file list to client
   socket.on('getconfig', function(){
-    var local_files = fs.readdirSync('/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
-    var remote_files = fs.readdirSync('/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+    var local_files = fs.readdirSync(datapath + '/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+    var remote_files = fs.readdirSync(datapath + '/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
     io.sockets.in(socket.id).emit('renderconfig',remote_files,local_files);
   });
   // When a file is requested send it's contents to the client
   socket.on('editgetfile', function(filename,islocal){
-    var file = '/config/menus/' + filename ;
+    var file = datapath + '/config/menus/' + filename ;
     var data = fs.readFileSync(file);
     var stat = fs.lstatSync(file);
     isBinaryFile(data, stat.size).then((result) => {
@@ -125,37 +126,37 @@ io.on('connection', function(socket){
   });
   // When save is requested save it sync files and return user to menu
   socket.on('saveconfig', function(filename,text){
-    fs.writeFileSync('/config/menus/local/' + filename, text);
+    fs.writeFileSync(datapath + '/config/menus/local/' + filename, text);
     layermenu(function(response){
-      var local_files = fs.readdirSync('/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
-      var remote_files = fs.readdirSync('/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+      var local_files = fs.readdirSync(datapath + '/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+      var remote_files = fs.readdirSync(datapath + '/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
       io.sockets.in(socket.id).emit('renderconfig',remote_files,local_files,filename,true);
     });
   });
   // When revert is requested delete it, sync files and return user to menu
   socket.on('revertconfig', function(filename){
-    fs.unlinkSync('/config/menus/local/' + filename);
+    fs.unlinkSync(datapath + '/config/menus/local/' + filename);
     layermenu(function(response){
-      var local_files = fs.readdirSync('/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
-      var remote_files = fs.readdirSync('/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+      var local_files = fs.readdirSync(datapath + '/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+      var remote_files = fs.readdirSync(datapath + '/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
       io.sockets.in(socket.id).emit('renderconfig',remote_files,local_files);
     });
   });
   // When a create file is 
   socket.on('createipxe', function(filename){
-    fs.writeFileSync('/config/menus/local/' + filename, '#!ipxe');
+    fs.writeFileSync(datapath + '/config/menus/local/' + filename, '#!ipxe');
     layermenu(function(response){
-      var local_files = fs.readdirSync('/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
-      var remote_files = fs.readdirSync('/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+      var local_files = fs.readdirSync(datapath + '/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+      var remote_files = fs.readdirSync(datapath + '/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
       io.sockets.in(socket.id).emit('renderconfig',remote_files,local_files,filename,true);
     });
   });
   // When the endpoints content is requested send it to the client
   socket.on('getlocal', async function(filename){
-    var remotemenuversion = fs.readFileSync('/config/menuversion.txt', 'utf8');
-    var endpointsfile = fs.readFileSync('/config/endpoints.yml');
+    var remotemenuversion = fs.readFileSync(datapath + '/config/menuversion.txt', 'utf8');
+    var endpointsfile = fs.readFileSync(datapath + '/config/endpoints.yml');
     var endpoints = yaml.load(endpointsfile);
-    var localfiles = await readdirp.promise('/assets/.');
+    var localfiles = await readdirp.promise(datapath + '/assets/.');
     var assets = [];
     if (localfiles.length != 0){
       for (var i in localfiles){
@@ -174,10 +175,10 @@ io.on('connection', function(socket){
   socket.on('deletelocal', function(dlfiles){
     for (var i in dlfiles){
       var file = dlfiles[i];
-      fs.unlinkSync('/assets' + file);
+      fs.unlinkSync(datapath + '/assets' + file);
       console.log('Deleted /assets' + file);
-      if (fs.existsSync('/assets' + file + '.part2')) {
-        fs.unlinkSync('/assets' + file + '.part2');
+      if (fs.existsSync(datapath + '/assets' + file + '.part2')) {
+        fs.unlinkSync(datapath + '/assets' + file + '.part2');
         console.log('Deleted /assets' + file + '.part2');
       }
     }
@@ -206,24 +207,24 @@ io.on('connection', function(socket){
 
 // Layer remote with local in the main tftp endpoint
 function layermenu(callback){
-  var local_files = fs.readdirSync('/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
-  var remote_files = fs.readdirSync('/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+  var local_files = fs.readdirSync(datapath + '/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+  var remote_files = fs.readdirSync(datapath + '/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
   for (var i in remote_files){
     var file = remote_files[i];
-    fs.copyFileSync('/config/menus/remote/' + file, '/config/menus/' + file);
+    fs.copyFileSync(datapath + '/config/menus/remote/' + file, datapath + '/config/menus/' + file);
   }
   for (var i in local_files){
     var file = local_files[i];
-    fs.copyFileSync('/config/menus/local/' + file, '/config/menus/' + file);
+    fs.copyFileSync(datapath + '/config/menus/local/' + file, datapath + '/config/menus/' + file);
   }
   callback(null, 'done');
 }
 
 // Upgrade menus to specified version
 async function upgrademenu(version, callback){
-  var remote_folder = '/config/menus/remote/';
+  var remote_folder = datapath + '/config/menus/remote/';
   // Wipe current remote
-  var remote_files = fs.readdirSync('/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+  var remote_files = fs.readdirSync(datapath + '/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
   for (var i in remote_files){
     var file = remote_files[i];
     fs.unlinkSync(remote_folder + file);
@@ -255,7 +256,7 @@ async function upgrademenu(version, callback){
     downloads.push({'url':url,'path':remote_folder});
   }
   // static config for endpoints
-  downloads.push({'url':'https://raw.githubusercontent.com/netbootxyz/netboot.xyz/' + version +'/endpoints.yml','path':'/config/'});
+  downloads.push({'url':'https://raw.githubusercontent.com/netbootxyz/netboot.xyz/' + version +'/endpoints.yml','path': datapath + '/config/'});
   await downloader(downloads);
   var untarcmd = 'tar xf ' + remote_folder + 'menus.tar.gz -C ' + remote_folder;
   if (version.length == 40){
@@ -263,7 +264,7 @@ async function upgrademenu(version, callback){
   }
   exec(untarcmd, function (err, stdout) {
     fs.unlinkSync(remote_folder + 'menus.tar.gz');
-    fs.writeFileSync('/config/menuversion.txt', version);
+    fs.writeFileSync(datapath + '/config/menuversion.txt', version);
     layermenu(function(response){
       disablesigs();
       callback(null, 'done');
@@ -276,7 +277,7 @@ async function dlremote(dlfiles, callback){
   var dlarray = [];
   for (var i in dlfiles){
     var dlfile = dlfiles[i];
-    var dlpath = '/assets' + path.dirname(dlfile);
+    var dlpath = datapath + '/assets' + path.dirname(dlfile);
     // Make destination directory
     fs.mkdirSync(dlpath, { recursive: true });
     // Construct array for use in download function
