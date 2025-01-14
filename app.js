@@ -58,8 +58,8 @@ io.on('connection', function(socket){
   ///////////////////////////
   // When dashboard info is requested send to client
   socket.on('getdash', function(){
-    var tftpcmd = '/usr/sbin/dnsmasq --version | head -n1';
-    var nginxcmd = '/usr/sbin/nginx -v';
+    var tftpcmd = process.env.TFTPCOMMAND || '/usr/sbin/dnsmasq --version | head -n1';
+    var webservercmd = process.env.WEBSERVERCOMMAND || '/usr/sbin/nginx -v';
     var dashinfo = {};
     dashinfo['webversion'] = version;
     dashinfo['menuversion'] = fs.readFileSync(datapath + '/config/menuversion.txt', 'utf8');
@@ -80,8 +80,8 @@ io.on('connection', function(socket){
               dashinfo['CPUpercent'] = currentLoad.currentload_user;
               exec(tftpcmd, function (err, stdout) {
                 dashinfo['tftpversion'] = stdout;
-                exec(nginxcmd, function (err, stdout, stderr) {
-                   dashinfo['nginxversion'] = stderr;
+                exec(webservercmd, function (err, stdout, stderr) {
+                   dashinfo['webserverversion'] = stdout;
                    io.sockets.in(socket.id).emit('renderdash',dashinfo);
                 });
               });  
@@ -156,7 +156,7 @@ io.on('connection', function(socket){
     var remotemenuversion = fs.readFileSync(datapath + '/config/menuversion.txt', 'utf8');
     var endpointsfile = fs.readFileSync(datapath + '/config/endpoints.yml');
     var endpoints = yaml.load(endpointsfile);
-    var localfiles = await readdirp.promise('/assets/.');
+    var localfiles = await readdirp.promise(datapath + '/assets/.');
     var assets = [];
     if (localfiles.length != 0){
       for (var i in localfiles){
@@ -175,10 +175,10 @@ io.on('connection', function(socket){
   socket.on('deletelocal', function(dlfiles){
     for (var i in dlfiles){
       var file = dlfiles[i];
-      fs.unlinkSync('/assets' + file);
+      fs.unlinkSync(datapath + '/assets' + file);
       console.log('Deleted /assets' + file);
-      if (fs.existsSync('/assets' + file + '.part2')) {
-        fs.unlinkSync('/assets' + file + '.part2');
+      if (fs.existsSync(datapath + '/assets' + file + '.part2')) {
+        fs.unlinkSync(datapath + '/assets' + file + '.part2');
         console.log('Deleted /assets' + file + '.part2');
       }
     }
