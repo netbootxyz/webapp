@@ -13,6 +13,11 @@ var isBinaryFile = require("isbinaryfile").isBinaryFile;
 var path = require('path');
 var readdirp = require('readdirp');
 var fetch = require('node-fetch');
+var urlLib = require('url');
+
+const allowedHosts = [
+  's3.amazonaws.com'
+];
 var si = require('systeminformation');
 const util = require('util');
 var { version } = require('./package.json');
@@ -342,7 +347,8 @@ async function downloader(downloads){
       console.error('Download failed:', error);
     });
 
-    if ( ! url.includes('s3.amazonaws.com')){
+    const parsedUrl = urlLib.parse(url);
+    if (!allowedHosts.includes(parsedUrl.host)){
       // Part 2 if exists repeat
       var response = await fetch(url + '.part2', {method: 'HEAD'});
       var urltest = response.headers.get('server');
