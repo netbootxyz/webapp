@@ -1,6 +1,6 @@
 {
   "name": "WebApp",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "description": "Configuration and mirroring application for netboot.xyz stack",
   "main": "app.js",
   "scripts": {
