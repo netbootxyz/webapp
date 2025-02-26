@@ -401,6 +401,7 @@ socket.on('renderlocal', function(endpoints,localfiles,remotemenuversion){
   var remotetable = $('#remoteassets').DataTable(tableoptions);
   localtable.clear();
   remotetable.clear();
+  disabled_folders = [];
   $.each(endpoints.endpoints, function(index,value){
     $.each(value.files, function( arrindex, file ) {
       if (localfiles.includes(value.path + file)){
@@ -427,8 +428,9 @@ socket.on('renderlocal', function(endpoints,localfiles,remotemenuversion){
   });
   if (localfiles.length != 0){
     var untrackedtable = $('#untrackedassets').DataTable(tableoptions);
+    (localfiles.filter(str => str.includes("disable-tracking-netbootxyz"))).forEach(element => {disabled_folders.push((element.substring(0,element.lastIndexOf("/")+1)))});
     $.each(localfiles, function( arrindex, file ) {
-      if (!file.endsWith('.part2')) {
+      if (!file.endsWith('.part2') && disabled_folders.filter(str => str.includes(file.substring(0,str.length))).length==0 ) {
         untrackedtable.row.add( 
           [
             '/assets' + file,
