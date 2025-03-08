@@ -1,0 +1,27 @@
+body.dark-mode {
+  background-color: #121212;
+  color: #e0e0e0;
+}
+
+.navbar.dark-mode {
+  background-color: #1f1f1f;
+}
+
+.card.dark-mode {
+  background-color: #1f1f1f;
+  border-color: #333;
+}
+
+.table.dark-mode {
+  background-color: #1f1f1f;
+  color: #e0e0e0;
+}
+
+.table.dark-mode th,
+.table.dark-mode td {
+  border-color: #333;
+}
+
+.progress-bar.dark-mode {
+  background-color: #3a3a3a;
+}

@@ -29,6 +29,7 @@
     <link rel="stylesheet" href="<%= baseurl %>public/vendor/css/bootstrap.min.css">
     <link rel="stylesheet" href="<%= baseurl %>public/vendor/css/docs.min.css">
     <link rel="stylesheet" href="<%= baseurl %>public/vendor/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="<%= baseurl %>public/vendor/css/dark-mode.css">
   </head>
   <body>
     <!-- Navigation -->
@@ -54,6 +55,9 @@
         </ul>
         <ul class="navbar-nav ml-auto">
           <div id="statusbar" style="width:500px" ></div>
+          <li class="nav-item">
+            <button class="btn btn-outline-secondary" id="darkModeToggle" onclick="toggleDarkMode()">Dark Mode</button>
+          </li>
         </ul>
       </div>
     </nav>

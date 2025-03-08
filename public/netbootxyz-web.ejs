@@ -1,17 +1,26 @@
-// netboot.xyz
-// Client side javascript
-
-
-// Initiate a websocket connection to the server
 var host = window.location.hostname; 
 var port = window.location.port;
 var protocol = window.location.protocol;
 var socket = io.connect(protocol + '//' + host + ':' + port, {path: "<%= baseurl %>socket.io"});
-// If the page is being loaded for the first time render in the homepage
-$(document).ready(function(){renderdash()})
+$(document).ready(function(){
+  renderdash();
+  applyDarkModePreference();
+});
 
+function applyDarkModePreference() {
+  const darkModeEnabled = localStorage.getItem('darkModeEnabled') === 'true';
+  if (darkModeEnabled) {
+    document.body.classList.add('dark-mode');
+    document.querySelector('.navbar').classList.add('dark-mode');
+  }
+}
 
-//// Dashboard Page rendering ////
+function toggleDarkMode() {
+  const darkModeEnabled = document.body.classList.toggle('dark-mode');
+  document.querySelector('.navbar').classList.toggle('dark-mode');
+  localStorage.setItem('darkModeEnabled', darkModeEnabled);
+}
+
 function renderdash(){
   $('#pagecontent').empty();
   $('#pagecontent').append('<center><div class="spinner-grow" style="width: 3rem; height: 3rem;" role="status"><span class="sr-only">Loading...</span></div><br><h2>Getting Dashboard</h2></center>');
