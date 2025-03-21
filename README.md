@@ -107,3 +107,33 @@ assets
         │
       [...]
 ```
+Resulting with following folders visible to webapp
+```
+assets
+├───asset-mirror
+│   └───releases
+│       └───download
+├───debian-core-10
+│   └───releases
+│       └───download
+├───debian-core-11
+│   └───releases
+│       └───download
+├───debian-core-12
+│   └───releases
+│       └───download
+├───debian-squash
+│   └───releases
+│       └───download
+├───fedora-assets
+│   └───releases
+│       └───download
+├───manjaro-squash
+│   └───releases
+│       └───download
+├───ssh
+└────ubuntu-squash
+    └───releases
+        └───download
+```
+
