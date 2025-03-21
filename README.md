@@ -53,3 +53,55 @@ docker run -d \
   --restart unless-stopped \
   ghcr.io/netbootxyz/webapp-dev:latest
 ```
+
+
+## Why this fork was created ?
+I wanted to be able to hide the directory and its contents from the webapp so modified as i see fit.
+It's not the greatest thing there but it works and it's all i need
+
+Makeing it possible to hide directories from netbootxyz webapp with creating a file named 'disable-tracking-netbootxyz' in the folder, making it invisible in gui
+In my case i have WinPE and extracted isos  in WinPE folder
+assets
+├───asset-mirror
+│   └───releases
+│       └───download
+├───debian-core-10
+│   └───releases
+│       └───download
+├───debian-core-11
+│   └───releases
+│       └───download
+├───debian-core-12
+│   └───releases
+│       └───download
+├───debian-squash
+│   └───releases
+│       └───download
+├───fedora-assets
+│   └───releases
+│       └───download
+├───manjaro-squash
+│   └───releases
+│       └───download
+├───ssh
+├───ubuntu-squash
+│   └───releases
+│       └───download
+└───WinPE <- want to hide this folder and its contents
+    ├───disable-tracking-netbootxyz (create file)
+    ├───configs
+    │   ├───Windows_10
+    │   └───Windows_11
+    ├───iso
+    │   ├───Windows_10
+    │   │   │ 
+    │   │ [...]
+    │   └───Windows_11
+    │   │   │ 
+    │   │ [...]
+    ├───x64
+    │   │
+    │ [...]
+    └───x86
+        │
+      [...]
