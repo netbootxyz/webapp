@@ -12,7 +12,7 @@ project located [here](https://github.com/netbootxyz/docker-netbootxyz).
 Uses the docker-netbootxyz repo for source files to avoid duplication of configs:
 
 ```bash
-git clone https://github.com/netbootxyz/webapp
+git clone https://github.com/Adambis1/webapp
 cd webapp
 git clone https://github.com/netbootxyz/docker-netbootxyz
 docker build . -t netbootxyz-webapp
