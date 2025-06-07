@@ -6,8 +6,40 @@ on:
   workflow_dispatch:
     
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: '0'
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run tests
+      run: npm test
+
+    - name: Run test coverage
+      run: npm run test:coverage
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      if: always()
+      with:
+        file: ./coverage/lcov.info
+        flags: webapp
+        name: webapp-coverage
+        fail_ci_if_error: false
+
   build:
     runs-on: ubuntu-latest
+    needs: test  # Only build if tests pass
 
     steps:
     - name: Checkout

@@ -2,8 +2,29 @@ name: webapp-dev
 on:
   push
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run tests
+      run: npm test
+
+    - name: Run test coverage
+      run: npm run test:coverage
+
   build:
     runs-on: ubuntu-latest
+    needs: test  # Only build/push if tests pass
     steps:
     - name: Checkout
       uses: actions/checkout@v4
