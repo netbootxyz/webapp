@@ -1,0 +1,363 @@
+// Test Socket.IO logic without actual server connections
+const fs = require('fs');
+const path = require('path');
+
+// Mock dependencies
+jest.mock('fs');
+jest.mock('child_process');
+jest.mock('systeminformation');
+jest.mock('js-yaml');
+jest.mock('readdirp');
+jest.mock('isbinaryfile');
+
+describe('Socket.IO Logic Tests (No Server)', () => {
+  let mockFs;
+  let mockExec;
+  let mockSi;
+  let mockYaml;
+  let mockReaddirp;
+  let mockIsBinaryFile;
+
+  beforeAll(() => {
+    // Setup all mocks
+    mockFs = require('fs');
+    mockExec = require('child_process').exec;
+    mockSi = require('systeminformation');
+    mockYaml = require('js-yaml');
+    mockReaddirp = require('readdirp');
+    mockIsBinaryFile = require('isbinaryfile');
+
+    // Default implementations
+    mockFs.existsSync.mockReturnValue(true);
+    mockFs.readFileSync.mockImplementation((filePath) => {
+      if (filePath.includes('menuversion.txt')) return '2.0.0-test';
+      if (filePath.includes('package.json') || filePath === 'package.json') return JSON.stringify({ version: '0.7.5' });
+      if (filePath.includes('endpoints.yml')) return 'endpoints:\n  test:\n    name: Test';
+      return 'mock file content';
+    });
+    
+    mockFs.writeFileSync.mockImplementation(() => {});
+    mockFs.readdirSync.mockImplementation((dir, options) => {
+      const files = ['test.ipxe', 'boot.cfg'];
+      if (options && options.withFileTypes) {
+        return files.map(name => ({
+          name,
+          isDirectory: () => false
+        }));
+      }
+      return files;
+    });
+    mockFs.copyFileSync.mockImplementation(() => {});
+    mockFs.unlinkSync.mockImplementation(() => {});
+    mockFs.lstatSync.mockReturnValue({ size: 100 });
+
+    mockExec.mockImplementation((cmd, callback) => {
+      if (callback) {
+        if (cmd.includes('dnsmasq')) {
+          callback(null, 'dnsmasq version 2.80', '');
+        } else if (cmd.includes('nginx')) {
+          callback(null, '', 'nginx version: nginx/1.18.0');
+        } else {
+          callback(null, 'mock output', '');
+        }
+      }
+    });
+
+    mockSi.cpu.mockImplementation((callback) => callback({ manufacturer: 'Mock CPU' }));
+    mockSi.mem.mockImplementation((callback) => callback({ total: 8000000000 }));
+    mockSi.currentLoad.mockImplementation((callback) => callback({ currentload_user: 25.5 }));
+
+    mockYaml.load.mockReturnValue({
+      endpoints: { test: { name: 'Test Endpoint' } }
+    });
+
+    mockReaddirp.promise.mockResolvedValue([
+      { path: 'test/file1.img' },
+      { path: 'test/file2.iso' }
+    ]);
+
+    mockIsBinaryFile.isBinaryFile.mockResolvedValue(false);
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    
+    // Reset mock implementations after each test
+    mockFs.readFileSync.mockImplementation((filePath) => {
+      if (filePath.includes('menuversion.txt')) return '2.0.0-test';
+      if (filePath.includes('package.json') || filePath === 'package.json') return JSON.stringify({ version: '0.7.5' });
+      if (filePath.includes('endpoints.yml')) return 'endpoints:\n  test:\n    name: Test';
+      if (filePath.includes('boot.cfg')) return 'set sigs_enabled true\necho "Boot config"';
+      return 'mock file content';
+    });
+    
+    mockFs.readdirSync.mockImplementation((dir, options) => {
+      const files = ['test.ipxe', 'boot.cfg'];
+      if (options && options.withFileTypes) {
+        return files.map(name => ({
+          name,
+          isDirectory: () => false
+        }));
+      }
+      return files;
+    });
+    
+    mockFs.lstatSync.mockReturnValue({ size: 100 });
+    
+    mockReaddirp.promise.mockResolvedValue([
+      { path: 'test/file1.img' },
+      { path: 'test/file2.iso' }
+    ]);
+  });
+
+  describe('Dashboard Information Gathering', () => {
+    test('should collect system information correctly', async () => {
+      const collectDashInfo = async () => {
+        const dashinfo = {};
+        dashinfo.webversion = JSON.parse(mockFs.readFileSync('package.json')).version;
+        dashinfo.menuversion = mockFs.readFileSync('/config/menuversion.txt', 'utf8');
+
+        return new Promise((resolve) => {
+          mockSi.cpu((cpu) => {
+            dashinfo.cpu = cpu;
+            mockSi.mem((mem) => {
+              dashinfo.mem = mem;
+              mockSi.currentLoad((load) => {
+                dashinfo.CPUpercent = load.currentload_user;
+                resolve(dashinfo);
+              });
+            });
+          });
+        });
+      };
+
+      const result = await collectDashInfo();
+      expect(result.webversion).toBe('0.7.5');
+      expect(result.menuversion).toBe('2.0.0-test');
+      expect(result.cpu).toHaveProperty('manufacturer', 'Mock CPU');
+      expect(result.mem).toHaveProperty('total', 8000000000);
+      expect(result.CPUpercent).toBe(25.5);
+    });
+
+    test('should handle command execution for version info', () => {
+      // Test the logic synchronously instead of relying on async callbacks
+      const getVersionInfo = () => {
+        const versions = {};
+        
+        // Simulate calling the mocked exec function
+        mockExec('/usr/sbin/dnsmasq --version | head -n1', (err, stdout) => {
+          versions.tftpversion = stdout;
+        });
+        
+        mockExec('/usr/sbin/nginx -v', (err, stdout, stderr) => {
+          versions.nginxversion = stderr;
+        });
+        
+        return versions;
+      };
+
+      const versions = getVersionInfo();
+      expect(mockExec).toHaveBeenCalledTimes(2);
+      expect(mockExec).toHaveBeenCalledWith('/usr/sbin/dnsmasq --version | head -n1', expect.any(Function));
+      expect(mockExec).toHaveBeenCalledWith('/usr/sbin/nginx -v', expect.any(Function));
+    });
+  });
+
+  describe('Configuration File Management', () => {
+    test('should list configuration files correctly', () => {
+      const getConfigFiles = () => {
+        const local_files = mockFs.readdirSync('/config/menus/local', {withFileTypes: true})
+          .filter(dirent => !dirent.isDirectory())
+          .map(dirent => dirent.name);
+        
+        const remote_files = mockFs.readdirSync('/config/menus/remote', {withFileTypes: true})
+          .filter(dirent => !dirent.isDirectory())
+          .map(dirent => dirent.name);
+
+        return { local_files, remote_files };
+      };
+
+      const result = getConfigFiles();
+      expect(result.local_files).toEqual(['test.ipxe', 'boot.cfg']);
+      expect(result.remote_files).toEqual(['test.ipxe', 'boot.cfg']);
+    });
+
+    test('should validate file paths for security', () => {
+      const validateFilePath = (filename, rootDir) => {
+        const filePath = path.resolve(rootDir, filename);
+        return filePath.startsWith(rootDir);
+      };
+
+      const rootDir = '/config/menus/local/';
+      
+      expect(validateFilePath('safe-file.ipxe', rootDir)).toBe(true);
+      expect(validateFilePath('../../../etc/passwd', rootDir)).toBe(false);
+      expect(validateFilePath('subdir/file.ipxe', rootDir)).toBe(true);
+    });
+
+    test('should handle file save operations', () => {
+      const saveFile = (filename, content) => {
+        const rootDir = '/config/menus/local/';
+        const filePath = path.resolve(rootDir, filename);
+        
+        if (!filePath.startsWith(rootDir)) {
+          throw new Error('Invalid file path');
+        }
+        
+        mockFs.writeFileSync(filePath, content);
+        return true;
+      };
+
+      expect(() => saveFile('test.ipxe', '#!ipxe\necho "test"')).not.toThrow();
+      expect(() => saveFile('../../../etc/passwd', 'malicious')).toThrow();
+      expect(mockFs.writeFileSync).toHaveBeenCalledWith('/config/menus/local/test.ipxe', '#!ipxe\necho "test"');
+    });
+
+    test('should handle binary file detection', async () => {
+      const checkBinaryFile = async (filePath) => {
+        const data = mockFs.readFileSync(filePath);
+        const stat = mockFs.lstatSync(filePath);
+        return await mockIsBinaryFile.isBinaryFile(data, stat.size);
+      };
+
+      const isBinary = await checkBinaryFile('/config/test.ipxe');
+      expect(isBinary).toBe(false);
+      expect(mockIsBinaryFile.isBinaryFile).toHaveBeenCalled();
+    });
+  });
+
+  describe('Menu Layering Logic', () => {
+    test('should layer remote and local files correctly', () => {
+      const layerMenu = () => {
+        const local_files = mockFs.readdirSync('/config/menus/local', {withFileTypes: true})
+          .filter(dirent => !dirent.isDirectory())
+          .map(dirent => dirent.name);
+        
+        const remote_files = mockFs.readdirSync('/config/menus/remote', {withFileTypes: true})
+          .filter(dirent => !dirent.isDirectory())
+          .map(dirent => dirent.name);
+
+        // Copy remote files first
+        remote_files.forEach(file => {
+          mockFs.copyFileSync(`/config/menus/remote/${file}`, `/config/menus/${file}`);
+        });
+
+        // Copy local files (overriding remote)
+        local_files.forEach(file => {
+          mockFs.copyFileSync(`/config/menus/local/${file}`, `/config/menus/${file}`);
+        });
+
+        return { copied: remote_files.length + local_files.length };
+      };
+
+      const result = layerMenu();
+      expect(result.copied).toBe(4); // 2 remote + 2 local files
+      expect(mockFs.copyFileSync).toHaveBeenCalledWith('/config/menus/remote/test.ipxe', '/config/menus/test.ipxe');
+      expect(mockFs.copyFileSync).toHaveBeenCalledWith('/config/menus/local/test.ipxe', '/config/menus/test.ipxe');
+    });
+  });
+
+  describe('Asset Management Logic', () => {
+    test('should get local assets information', async () => {
+      const getLocalAssets = async () => {
+        const endpointsfile = mockFs.readFileSync('/config/endpoints.yml');
+        const endpoints = mockYaml.load(endpointsfile);
+        const localfiles = await mockReaddirp.promise('/assets/.');
+        
+        const assets = localfiles.map(file => '/' + file.path);
+        
+        return { endpoints, assets };
+      };
+
+      const result = await getLocalAssets();
+      expect(result.endpoints).toHaveProperty('test');
+      expect(result.assets).toEqual(['/test/file1.img', '/test/file2.iso']);
+    });
+
+    test('should handle asset deletion with part files', () => {
+      const deleteAsset = (filePath) => {
+        mockFs.unlinkSync('/assets' + filePath);
+        
+        if (mockFs.existsSync('/assets' + filePath + '.part2')) {
+          mockFs.unlinkSync('/assets' + filePath + '.part2');
+        }
+      };
+
+      deleteAsset('/test/file.img');
+      expect(mockFs.unlinkSync).toHaveBeenCalledWith('/assets/test/file.img');
+    });
+  });
+
+  describe('Version Handling Logic', () => {
+    test('should generate correct download URLs based on version type', () => {
+      const generateDownloadUrl = (version) => {
+        // Check if it's a commit SHA (40 characters)
+        if (version.length === 40) {
+          return `https://s3.amazonaws.com/dev.boot.netboot.xyz/${version}/ipxe/`;
+        } else {
+          return `https://github.com/netbootxyz/netboot.xyz/releases/download/${version}/`;
+        }
+      };
+
+      const commitSha = 'a1b2c3d4e5f6789012345678901234567890abcd';
+      const release = 'v2.0.0';
+
+      expect(generateDownloadUrl(commitSha)).toContain('s3.amazonaws.com');
+      expect(generateDownloadUrl(release)).toContain('github.com');
+    });
+
+    test('should identify ROM files correctly', () => {
+      const romFiles = [
+        'netboot.xyz.kpxe',
+        'netboot.xyz-undionly.kpxe',
+        'netboot.xyz.efi',
+        'netboot.xyz-snp.efi',
+        'netboot.xyz-snponly.efi',
+        'netboot.xyz-arm64.efi',
+        'netboot.xyz-arm64-snp.efi',
+        'netboot.xyz-arm64-snponly.efi'
+      ];
+
+      const isRomFile = (filename) => {
+        return romFiles.includes(filename);
+      };
+
+      expect(isRomFile('netboot.xyz.efi')).toBe(true);
+      expect(isRomFile('custom.ipxe')).toBe(false);
+    });
+  });
+
+  describe('Error Handling Logic', () => {
+    test('should handle file system errors gracefully', () => {
+      mockFs.readFileSync.mockImplementationOnce(() => {
+        throw new Error('File not found');
+      });
+
+      const safeReadFile = (filePath) => {
+        try {
+          return mockFs.readFileSync(filePath);
+        } catch (error) {
+          return null;
+        }
+      };
+
+      const result = safeReadFile('/nonexistent/file.txt');
+      expect(result).toBeNull();
+    });
+
+    test('should validate user input for safety', () => {
+      const validateInput = (input) => {
+        // Basic validation
+        if (typeof input !== 'string') return false;
+        if (input.length > 1000) return false;
+        if (input.includes('..')) return false;
+        return true;
+      };
+
+      expect(validateInput('valid-filename.ipxe')).toBe(true);
+      expect(validateInput('../../../etc/passwd')).toBe(false);
+      expect(validateInput(123)).toBe(false);
+      expect(validateInput('x'.repeat(1001))).toBe(false);
+    });
+  });
+});

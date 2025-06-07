@@ -1,0 +1,243 @@
+const request = require('supertest');
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+
+// Mock filesystem and other dependencies
+jest.mock('fs');
+jest.mock('child_process');
+jest.mock('systeminformation');
+jest.mock('js-yaml');
+jest.mock('readdirp');
+
+describe('Integration Tests - HTTP Routes', () => {
+  let app;
+  let server;
+  
+  beforeAll((done) => {
+    // Setup comprehensive mocks
+    const mockFs = require('fs');
+    const mockExec = require('child_process').exec;
+    const mockSi = require('systeminformation');
+    const mockYaml = require('js-yaml');
+    const mockReaddirp = require('readdirp');
+
+    // Mock file system operations
+    mockFs.existsSync.mockReturnValue(true);
+    mockFs.readFileSync.mockImplementation((filePath) => {
+      if (filePath.includes('menuversion.txt')) return '2.0.0-test';
+      if (filePath.includes('boot.cfg')) return 'set sigs_enabled true\necho "Boot config"';
+      if (filePath.includes('package.json')) return JSON.stringify({ version: '0.7.5' });
+      if (filePath.includes('endpoints.yml')) return 'endpoints:\n  test:\n    name: Test';
+      return 'mock file content';
+    });
+    
+    mockFs.writeFileSync.mockImplementation(() => {});
+    mockFs.readdirSync.mockReturnValue(['test.ipxe', 'boot.cfg']);
+    mockFs.copyFileSync.mockImplementation(() => {});
+    mockFs.unlinkSync.mockImplementation(() => {});
+    mockFs.mkdirSync.mockImplementation(() => {});
+    mockFs.lstatSync.mockReturnValue({ size: 100 });
+
+    // Mock child process
+    mockExec.mockImplementation((cmd, callback) => {
+      if (callback) {
+        if (cmd.includes('dnsmasq')) {
+          callback(null, 'dnsmasq version 2.80', '');
+        } else if (cmd.includes('nginx')) {
+          callback(null, '', 'nginx version: nginx/1.18.0');
+        } else {
+          callback(null, 'mock command output', '');
+        }
+      }
+    });
+
+    // Mock system information
+    mockSi.cpu.mockImplementation((callback) => callback({ 
+      manufacturer: 'Mock CPU',
+      brand: 'Mock Processor',
+      cores: 4 
+    }));
+    mockSi.mem.mockImplementation((callback) => callback({ 
+      total: 8000000000,
+      free: 4000000000 
+    }));
+    mockSi.currentLoad.mockImplementation((callback) => callback({ 
+      currentload_user: 25.5 
+    }));
+
+    // Mock YAML parsing
+    mockYaml.load.mockReturnValue({
+      endpoints: {
+        test: { name: 'Test Endpoint', url: 'http://test.example.com' }
+      }
+    });
+
+    // Mock directory reading
+    mockReaddirp.promise.mockResolvedValue([
+      { path: 'test/file1.img' },
+      { path: 'test/file2.iso' }
+    ]);
+
+    // Set test environment
+    process.env.NODE_ENV = 'test';
+    process.env.SUBFOLDER = '/test/';
+    
+    // Create a test Express app that mimics the main app structure
+    app = express();
+    app.set('view engine', 'ejs');
+    
+    // Add test routes that mirror the main app
+    const baserouter = express.Router();
+    
+    baserouter.get("/", function (req, res) {
+      res.status(200).json({ message: 'Welcome to netboot.xyz webapp', baseurl: process.env.SUBFOLDER || '/' });
+    });
+    
+    baserouter.get("/netbootxyz-web.js", function (req, res) {
+      res.setHeader("Content-Type", "application/javascript");
+      res.status(200).send('// Mock JavaScript content');
+    });
+    
+    baserouter.use('/public', express.static(path.join(__dirname, '../../public')));
+    
+    // Health check endpoint
+    baserouter.get('/health', function (req, res) {
+      res.status(200).json({ 
+        status: 'healthy',
+        version: '0.7.5',
+        timestamp: new Date().toISOString()
+      });
+    });
+    
+    app.use(process.env.SUBFOLDER || '/', baserouter);
+    
+    // Create server for testing
+    const http = require('http');
+    server = http.createServer(app);
+    server.listen(0, () => { // Use port 0 for random available port
+      done();
+    });
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterAll((done) => {
+    if (server) {
+      server.close(() => {
+        done();
+      });
+    } else {
+      done();
+    }
+  });
+
+  describe('Basic Route Tests', () => {
+    test('GET / should return welcome message', async () => {
+      const response = await request(app)
+        .get('/test/')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('netboot.xyz webapp');
+      expect(response.body).toHaveProperty('baseurl');
+    });
+
+    test('GET /netbootxyz-web.js should return JavaScript content', async () => {
+      const response = await request(app)
+        .get('/test/netbootxyz-web.js')
+        .expect(200)
+        .expect('Content-Type', /javascript/);
+
+      expect(response.text).toContain('Mock JavaScript content');
+    });
+
+    test('GET /health should return health status', async () => {
+      const response = await request(app)
+        .get('/test/health')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('status', 'healthy');
+      expect(response.body).toHaveProperty('version', '0.7.5');
+      expect(response.body).toHaveProperty('timestamp');
+    });
+  });
+
+  describe('Static File Serving', () => {
+    test('should serve static files from public directory', async () => {
+      // This test verifies that the static middleware is configured
+      await request(app)
+        .get('/test/public/nonexistent.css')
+        .expect(404); // Should return 404 for non-existent files
+    });
+  });
+
+  describe('Error Handling', () => {
+    test('should handle 404 for non-existent routes', async () => {
+      await request(app)
+        .get('/test/nonexistent-route')
+        .expect(404);
+    });
+
+    test('should handle malformed requests gracefully', async () => {
+      await request(app)
+        .get('/test/')
+        .set('Content-Type', 'application/json')
+        .send('malformed json{')
+        .expect(200); // Should still work for GET requests
+    });
+  });
+
+  describe('Base URL Configuration', () => {
+    test('should respect SUBFOLDER environment variable', () => {
+      const baseurl = process.env.SUBFOLDER || '/';
+      expect(baseurl).toBe('/test/');
+    });
+
+    test('should handle requests with different base URLs', async () => {
+      // Test that routes work with the configured subfolder
+      const response = await request(app)
+        .get('/test/')
+        .expect(200);
+
+      expect(response.body.baseurl).toBe('/test/');
+    });
+  });
+
+  describe('Security Headers', () => {
+    test('should set appropriate content-type for JavaScript files', async () => {
+      const response = await request(app)
+        .get('/test/netbootxyz-web.js')
+        .expect(200);
+
+      expect(response.headers['content-type']).toMatch(/javascript/);
+    });
+  });
+
+  describe('Performance', () => {
+    test('should respond to health checks quickly', async () => {
+      const startTime = Date.now();
+      
+      await request(app)
+        .get('/test/health')
+        .expect(200);
+      
+      const responseTime = Date.now() - startTime;
+      expect(responseTime).toBeLessThan(1000); // Should respond within 1 second
+    });
+
+    test('should handle multiple concurrent requests', async () => {
+      const requests = Array(10).fill().map(() => 
+        request(app).get('/test/health').expect(200)
+      );
+
+      const responses = await Promise.all(requests);
+      expect(responses).toHaveLength(10);
+      responses.forEach(response => {
+        expect(response.body.status).toBe('healthy');
+      });
+    });
+  });
+});

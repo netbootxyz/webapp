@@ -4,7 +4,16 @@
   "description": "Configuration and mirroring application for netboot.xyz stack",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --testPathPattern=unit",
+    "test:all": "jest",
+    "test:watch": "jest --watch --testPathPattern=unit",
+    "test:coverage": "jest --coverage --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:basic": "jest tests/unit/basic.test.js",
+    "test:safe": "jest tests/unit/basic.test.js tests/unit/socket-logic.test.js",
+    "test:debug": "jest --detectOpenHandles --verbose --no-cache",
+    "test:clean": "jest --clearCache"
   },
   "repository": {
     "type": "git",
@@ -24,5 +33,13 @@
     "node-fetch": "2.7.0",
     "socket.io": "4.8.1",
     "systeminformation": "5.25.11"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "socket.io-client": "^4.8.1",
+    "nock": "^13.3.8",
+    "@types/jest": "^29.5.8",
+    "mock-fs": "^5.2.0"
   }
 }
