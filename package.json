@@ -36,7 +36,7 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "supertest": "^6.3.3",
+    "supertest": "^7.0.0",
     "socket.io-client": "^4.8.1",
     "nock": "^14.0.0",
     "@types/jest": "^29.5.8",
