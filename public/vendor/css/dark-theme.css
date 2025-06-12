@@ -1,0 +1,375 @@
+/* Dark Theme for netboot.xyz webapp */
+
+/* Root dark theme variables */
+[data-theme="dark"] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #3d3d3d;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-muted: #888888;
+  --border-color: #444444;
+  --accent-color: #0d6efd;
+}
+
+/* Global dark theme styles */
+[data-theme="dark"] body {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Navbar dark theme */
+[data-theme="dark"] .navbar-light {
+  background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .navbar-light .navbar-brand,
+[data-theme="dark"] .navbar-light .navbar-nav .nav-link {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .navbar-light .navbar-nav .nav-link:hover,
+[data-theme="dark"] .navbar-light .navbar-nav .nav-link:focus {
+  color: var(--accent-color) !important;
+}
+
+/* Card components */
+[data-theme="dark"] .card {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .card-header {
+  background-color: var(--bg-tertiary) !important;
+  border-bottom-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .card-body {
+  color: var(--text-primary) !important;
+}
+
+/* Table styles */
+[data-theme="dark"] .table {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .table td,
+[data-theme="dark"] .table th {
+  border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .table-striped tbody tr:nth-of-type(odd) {
+  background-color: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .table-hover tbody tr:hover {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* DataTables dark theme */
+[data-theme="dark"] .dataTables_wrapper {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .dataTables_info,
+[data-theme="dark"] .dataTables_paginate {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .page-link {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .page-link:hover {
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--accent-color) !important;
+}
+
+[data-theme="dark"] .page-item.active .page-link {
+  background-color: var(--accent-color) !important;
+  border-color: var(--accent-color) !important;
+}
+
+/* Form elements */
+[data-theme="dark"] .form-control {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .form-control:focus {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--accent-color) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+[data-theme="dark"] .form-control::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Select elements */
+[data-theme="dark"] select.form-control {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] select.form-control option {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Buttons */
+[data-theme="dark"] .btn-secondary {
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary {
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary:hover {
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Badges */
+[data-theme="dark"] .badge-secondary {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Alerts */
+[data-theme="dark"] .alert {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .alert-info {
+  background-color: #1f4e79 !important;
+  border-color: #2c5aa0 !important;
+  color: #b3d7ff !important;
+}
+
+[data-theme="dark"] .alert-success {
+  background-color: #1e4620 !important;
+  border-color: #28a745 !important;
+  color: #b3ffb3 !important;
+}
+
+[data-theme="dark"] .alert-warning {
+  background-color: #664d03 !important;
+  border-color: #ffc107 !important;
+  color: #fff3cd !important;
+}
+
+[data-theme="dark"] .alert-danger {
+  background-color: #721c24 !important;
+  border-color: #dc3545 !important;
+  color: #f8d7da !important;
+}
+
+/* Progress bars */
+[data-theme="dark"] .progress {
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* Modals */
+[data-theme="dark"] .modal-content {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .modal-header {
+  border-bottom-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .modal-footer {
+  border-top-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .close {
+  color: var(--text-primary) !important;
+  text-shadow: none !important;
+}
+
+/* Ace Editor container and components */
+[data-theme="dark"] .ace_editor {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Ace Editor line numbers */
+[data-theme="dark"] .ace_gutter {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-muted) !important;
+  border-right: 1px solid var(--border-color) !important;
+}
+
+[data-theme="dark"] .ace_gutter-active-line {
+  background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .ace_gutter-cell {
+  color: var(--text-muted) !important;
+}
+
+/* Ace Editor main content area */
+[data-theme="dark"] .ace_scroller {
+  background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .ace_content {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Ace Editor cursor */
+[data-theme="dark"] .ace_cursor {
+  color: var(--text-primary) !important;
+  border-left: 2px solid var(--text-primary) !important;
+}
+
+/* Ace Editor selection - only override selection, not syntax colors */
+[data-theme="dark"] .ace_selection {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .ace_selected-word {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+/* Ace Editor active line */
+[data-theme="dark"] .ace_active-line {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Ace Editor scrollbars */
+[data-theme="dark"] .ace_scrollbar {
+  background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .ace_scrollbar-inner {
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* Remove the overly broad color overrides that break syntax highlighting */
+/* The monokai theme will handle syntax coloring properly now */
+
+/* Custom scrollbars for dark theme */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--border-color);
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--border-color, #dee2e6);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  margin-left: 0.5rem;
+  color: var(--text-primary, #212529);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background-color: var(--bg-tertiary, #f8f9fa);
+}
+
+[data-theme="dark"] .theme-toggle {
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+  background-color: var(--bg-tertiary);
+}
+
+/* Text colors */
+[data-theme="dark"] .text-muted {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .text-secondary {
+  color: var(--text-secondary) !important;
+}
+
+/* Breadcrumbs */
+[data-theme="dark"] .breadcrumb {
+  background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .breadcrumb-item + .breadcrumb-item::before {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .breadcrumb-item a {
+  color: var(--accent-color) !important;
+}
+
+/* List groups */
+[data-theme="dark"] .list-group-item {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .list-group-item:hover {
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* File listing sidebar - clickable filenames */
+[data-theme="dark"] .bd-toc-link {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .bd-toc-link:hover {
+  color: var(--text-primary) !important;
+  background-color: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .bd-toc-item.active > .bd-toc-link {
+  color: var(--accent-color) !important;
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* General links */
+[data-theme="dark"] a {
+  color: var(--accent-color) !important;
+}
+
+[data-theme="dark"] a:hover {
+  color: #5a9bfd !important;
+}
