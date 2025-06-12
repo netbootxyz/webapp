@@ -4,12 +4,12 @@
   "description": "Configuration and mirroring application for netboot.xyz stack",
   "main": "app.js",
   "scripts": {
-    "test": "jest --testPathPattern=unit",
+    "test": "jest --testPathPatterns=unit",
     "test:all": "jest",
-    "test:watch": "jest --watch --testPathPattern=unit",
-    "test:coverage": "jest --coverage --testPathPattern=unit",
-    "test:integration": "jest --testPathPattern=integration",
-    "test:unit": "jest --testPathPattern=unit",
+    "test:watch": "jest --watch --testPathPatterns=unit",
+    "test:coverage": "jest --coverage --testPathPatterns=unit",
+    "test:integration": "jest --testPathPatterns=integration",
+    "test:unit": "jest --testPathPatterns=unit",
     "test:basic": "jest tests/unit/basic.test.js",
     "test:safe": "jest tests/unit/basic.test.js tests/unit/socket-logic.test.js",
     "test:debug": "jest --detectOpenHandles --verbose --no-cache",
@@ -35,7 +35,7 @@
     "systeminformation": "5.27.1"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
+    "jest": "^30.0.0",
     "supertest": "^7.0.0",
     "socket.io-client": "^4.8.1",
     "nock": "^14.0.0",
