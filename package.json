@@ -39,7 +39,7 @@
     "supertest": "^7.0.0",
     "socket.io-client": "^4.8.1",
     "nock": "^14.0.0",
-    "@types/jest": "^29.5.8",
+    "@types/jest": "^30.0.0",
     "mock-fs": "^5.2.0"
   }
 }
