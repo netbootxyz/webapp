@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -27,10 +27,10 @@ jobs:
     needs: test  # Only build/push if tests pass
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Checkout docker-netbootxyz for container source files
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: netbootxyz/docker-netbootxyz
         path: docker-netbootxyz
