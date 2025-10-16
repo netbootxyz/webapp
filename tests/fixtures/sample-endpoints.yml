@@ -1,0 +1,24 @@
+endpoints:
+  ubuntu:
+    name: "Ubuntu"
+    url: "http://archive.ubuntu.com/ubuntu/"
+    menu: "ubuntu.ipxe"
+    enabled: true
+  
+  debian:
+    name: "Debian"
+    url: "http://deb.debian.org/debian/"
+    menu: "debian.ipxe"
+    enabled: true
+  
+  fedora:
+    name: "Fedora"
+    url: "https://download.fedoraproject.org/pub/fedora/"
+    menu: "fedora.ipxe"
+    enabled: true
+  
+  centos:
+    name: "CentOS"
+    url: "http://mirror.centos.org/centos/"
+    menu: "centos.ipxe" 
+    enabled: false

@@ -17,6 +17,11 @@ var isBinaryFile = require("isbinaryfile").isBinaryFile;
 var path = require('path');
 let {readdirp} = require('readdirp');
 var fetch = require('node-fetch');
+var urlLib = require('url');
+
+const allowedHosts = [
+  's3.amazonaws.com'
+];
 var si = require('systeminformation');
 const util = require('util');
 var { version } = require('./package.json');
@@ -136,10 +141,15 @@ io.on('connection', function(socket){
     io.sockets.in(socket.id).emit('renderconfig',remote_files,local_files);
   });
   // When a file is requested send it's contents to the client
-  socket.on('editgetfile', function(filename,islocal){
-    var file = '/config/menus/' + filename ;
-    var data = fs.readFileSync(file);
-    var stat = fs.lstatSync(file);
+  socket.on('editgetfile', function(filename, islocal){
+    var rootDir = '/config/menus/';
+    var filePath = path.resolve(rootDir, filename);
+    if (!filePath.startsWith(rootDir)) {
+      io.sockets.in(socket.id).emit('error', 'Invalid file path');
+      return;
+    }
+    var data = fs.readFileSync(filePath);
+    var stat = fs.lstatSync(filePath);
     isBinaryFile(data, stat.size).then((result) => {
       if (result) {
         io.sockets.in(socket.id).emit('editrenderfile','CANNOT EDIT THIS IS A BINARY FILE',filename,'nomenu');
@@ -150,30 +160,48 @@ io.on('connection', function(socket){
     });
   });
   // When save is requested save it sync files and return user to menu
-  socket.on('saveconfig', function(filename,text){
-    fs.writeFileSync('/config/menus/local/' + filename, text);
+  socket.on('saveconfig', function(filename, text){
+    var rootDir = '/config/menus/local/';
+    var filePath = path.resolve(rootDir, filename);
+    if (!filePath.startsWith(rootDir)) {
+      io.sockets.in(socket.id).emit('error', 'Invalid file path');
+      return;
+    }
+    fs.writeFileSync(filePath, text);
     layermenu(function(response){
-      var local_files = fs.readdirSync('/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
-      var remote_files = fs.readdirSync('/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
-      io.sockets.in(socket.id).emit('renderconfig',remote_files,local_files,filename,true);
+      var local_files = fs.readdirSync(rootDir, {withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+      var remote_files = fs.readdirSync('/config/menus/remote', {withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+      io.sockets.in(socket.id).emit('renderconfig', remote_files, local_files, filename, true);
     });
   });
   // When revert is requested delete it, sync files and return user to menu
   socket.on('revertconfig', function(filename){
-    fs.unlinkSync('/config/menus/local/' + filename);
+    var rootDir = '/config/menus/local/';
+    var filePath = path.resolve(rootDir, filename);
+    if (!filePath.startsWith(rootDir)) {
+      io.sockets.in(socket.id).emit('error', 'Invalid file path');
+      return;
+    }
+    fs.unlinkSync(filePath);
     layermenu(function(response){
-      var local_files = fs.readdirSync('/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
-      var remote_files = fs.readdirSync('/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
-      io.sockets.in(socket.id).emit('renderconfig',remote_files,local_files);
+      var local_files = fs.readdirSync(rootDir, {withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+      var remote_files = fs.readdirSync('/config/menus/remote', {withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+      io.sockets.in(socket.id).emit('renderconfig', remote_files, local_files);
     });
   });
   // When a create file is
   socket.on('createipxe', function(filename){
-    fs.writeFileSync('/config/menus/local/' + filename, '#!ipxe');
+    var rootDir = '/config/menus/local/';
+    var filePath = path.resolve(rootDir, filename);
+    if (!filePath.startsWith(rootDir)) {
+      io.sockets.in(socket.id).emit('error', 'Invalid file path');
+      return;
+    }
+    fs.writeFileSync(filePath, '#!ipxe');
     layermenu(function(response){
-      var local_files = fs.readdirSync('/config/menus/local',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
-      var remote_files = fs.readdirSync('/config/menus/remote',{withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
-      io.sockets.in(socket.id).emit('renderconfig',remote_files,local_files,filename,true);
+      var local_files = fs.readdirSync(rootDir, {withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+      var remote_files = fs.readdirSync('/config/menus/remote', {withFileTypes: true}).filter(dirent => !dirent.isDirectory()).map(dirent => dirent.name);
+      io.sockets.in(socket.id).emit('renderconfig', remote_files, local_files, filename, true);
     });
   });
   // When the endpoints content is requested send it to the client
@@ -353,7 +381,8 @@ async function downloader(downloads){
       console.error('Download failed:', error);
     });
 
-    if ( ! url.includes('s3.amazonaws.com')){
+    const parsedUrl = urlLib.parse(url);
+    if (!allowedHosts.includes(parsedUrl.host)){
       // Part 2 if exists repeat
       var response = await fetch(url + '.part2',{method:'HEAD',agent:getProxyAgentFromUrl(url,false)});
       var urltest = response.headers.get('server');

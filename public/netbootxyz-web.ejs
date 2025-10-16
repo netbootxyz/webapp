@@ -1,6 +1,43 @@
 // netboot.xyz
 // Client side javascript
 
+//// Theme Management ////
+function initializeTheme() {
+  const savedTheme = localStorage.getItem('netbootxyz-theme') || 'light';
+  applyTheme(savedTheme);
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  applyTheme(newTheme);
+  localStorage.setItem('netbootxyz-theme', newTheme);
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const themeIcon = document.getElementById('theme-icon');
+  if (themeIcon) {
+    themeIcon.textContent = theme === 'light' ? '🌙' : '☀️';
+  }
+  
+  // Update Ace Editor theme if it exists
+  updateAceEditorTheme(theme);
+}
+
+function updateAceEditorTheme(theme) {
+  const editorElement = document.getElementById('editor');
+  if (editorElement && typeof ace !== 'undefined') {
+    try {
+      const editor = ace.edit('editor');
+      const aceTheme = theme === 'dark' ? 'ace/theme/monokai' : 'ace/theme/chrome';
+      editor.setTheme(aceTheme);
+    } catch (e) {
+      // Editor might not be initialized yet, ignore
+    }
+  }
+}
+
 
 // Initiate a websocket connection to the server
 var host = window.location.hostname; 
@@ -8,7 +45,11 @@ var port = window.location.port;
 var protocol = window.location.protocol;
 var socket = io.connect(protocol + '//' + host + ':' + port, {path: "<%= baseurl %>socket.io"});
 // If the page is being loaded for the first time render in the homepage
-$(document).ready(function(){renderdash()})
+$(document).ready(function(){
+  // Initialize theme from localStorage or default to light
+  initializeTheme();
+  renderdash();
+})
 
 
 //// Dashboard Page rendering ////
@@ -212,7 +253,9 @@ socket.on('editrenderfile', function(response,filename,metadata){
   </div>\
   <div id="editor" style="height:100%;width:100%"></div>');
   editor = ace.edit('editor');
-  editor.setTheme('ace/theme/chrome');
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  const aceTheme = currentTheme === 'dark' ? 'ace/theme/monokai' : 'ace/theme/chrome';
+  editor.setTheme(aceTheme);
   editor.session.setMode('ace/mode/sh');
   editor.$blockScrolling = Infinity;
   editor.setOptions({

@@ -1,0 +1,32 @@
+#!ipxe
+# Custom netboot.xyz menu
+# This is a sample custom menu for testing
+
+:custom_start
+menu Custom Tools
+item --gap --           ---- Custom Tools ----
+item diagnostics        Hardware Diagnostics
+item backup             Backup & Recovery Tools
+item security           Security Tools
+item --gap --           ---- Back ----
+item back               Back to main menu
+choose selected
+goto ${selected}
+
+:diagnostics
+echo Starting hardware diagnostics...
+# Add diagnostic tools here
+goto custom_start
+
+:backup
+echo Loading backup tools...
+# Add backup tools here
+goto custom_start
+
+:security
+echo Loading security tools...
+# Add security tools here
+goto custom_start
+
+:back
+exit

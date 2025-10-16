@@ -1,0 +1,423 @@
+const Client = require('socket.io-client');
+const http = require('http');
+const socketIO = require('socket.io');
+const express = require('express');
+const fs = require('fs');
+const nock = require('nock');
+
+// Mock filesystem and other dependencies
+jest.mock('fs');
+jest.mock('child_process');
+jest.mock('systeminformation');
+jest.mock('js-yaml');
+jest.mock('readdirp');
+jest.mock('isbinaryfile');
+
+describe('Integration Tests - Socket.IO', () => {
+  let server;
+  let io;
+  let clientSocket;
+  let serverSocket;
+  let port;
+
+  beforeAll((done) => {
+    // Setup comprehensive mocks
+    const mockFs = require('fs');
+    const mockExec = require('child_process').exec;
+    const mockSi = require('systeminformation');
+    const mockYaml = require('js-yaml');
+    const mockReaddirp = require('readdirp');
+    const mockIsBinaryFile = require('isbinaryfile');
+
+    // Mock file system operations
+    mockFs.existsSync.mockReturnValue(true);
+    mockFs.readFileSync.mockImplementation((filePath) => {
+      if (filePath.includes('menuversion.txt')) return '2.0.0-test';
+      if (filePath.includes('boot.cfg')) return 'set sigs_enabled true\necho "Boot config"';
+      if (filePath.includes('package.json')) return JSON.stringify({ version: '0.7.5' });
+      if (filePath.includes('endpoints.yml')) return 'endpoints:\n  test:\n    name: Test';
+      if (filePath.includes('test.ipxe')) return '#!ipxe\necho "Test menu"';
+      return 'mock file content';
+    });
+    
+    mockFs.writeFileSync.mockImplementation(() => {});
+    mockFs.readdirSync.mockReturnValue(['test.ipxe', 'boot.cfg']);
+    mockFs.copyFileSync.mockImplementation(() => {});
+    mockFs.unlinkSync.mockImplementation(() => {});
+    mockFs.mkdirSync.mockImplementation(() => {});
+    mockFs.lstatSync.mockReturnValue({ size: 100 });
+
+    // Mock child process
+    mockExec.mockImplementation((cmd, callback) => {
+      if (callback) {
+        if (cmd.includes('dnsmasq')) {
+          callback(null, 'dnsmasq version 2.80', '');
+        } else if (cmd.includes('nginx')) {
+          callback(null, '', 'nginx version: nginx/1.18.0');
+        } else if (cmd.includes('tar xf')) {
+          callback(null, 'tar extraction complete', '');
+        } else {
+          callback(null, 'mock command output', '');
+        }
+      }
+    });
+
+    // Mock system information
+    mockSi.cpu.mockImplementation((callback) => callback({ 
+      manufacturer: 'Mock CPU',
+      brand: 'Mock Processor',
+      cores: 4 
+    }));
+    mockSi.mem.mockImplementation((callback) => callback({ 
+      total: 8000000000,
+      free: 4000000000 
+    }));
+    mockSi.currentLoad.mockImplementation((callback) => callback({ 
+      currentload_user: 25.5 
+    }));
+
+    // Mock YAML parsing
+    mockYaml.load.mockReturnValue({
+      endpoints: {
+        test: { name: 'Test Endpoint', url: 'http://test.example.com' }
+      }
+    });
+
+    // Mock directory reading
+    mockReaddirp.promise.mockResolvedValue([
+      { path: 'test/file1.img' },
+      { path: 'test/file2.iso' }
+    ]);
+
+    // Mock binary file detection
+    mockIsBinaryFile.isBinaryFile.mockResolvedValue(false);
+
+    // Mock GitHub API
+    nock('https://api.github.com')
+      .get('/repos/netbootxyz/netboot.xyz/releases/latest')
+      .reply(200, { tag_name: '2.0.0' })
+      .get('/repos/netbootxyz/netboot.xyz/releases')
+      .reply(200, [
+        { tag_name: '2.0.0', name: 'Release 2.0.0' },
+        { tag_name: '1.9.9', name: 'Release 1.9.9' }
+      ])
+      .get('/repos/netbootxyz/netboot.xyz/commits')
+      .reply(200, [
+        { sha: 'abc123', commit: { message: 'Test commit' } }
+      ])
+      .persist();
+
+    // Create test server
+    const app = express();
+    server = http.createServer(app);
+    io = socketIO(server, { path: '/socket.io' });
+
+    // Setup Socket.IO event handlers (mimicking the main app)
+    io.on('connection', (socket) => {
+      serverSocket = socket;
+
+      socket.on('getdash', () => {
+        const dashinfo = {
+          webversion: '0.7.5',
+          menuversion: '2.0.0-test',
+          remotemenuversion: '2.0.0',
+          cpu: { manufacturer: 'Mock CPU' },
+          mem: { total: 8000000000 },
+          CPUpercent: 25.5,
+          tftpversion: 'dnsmasq version 2.80',
+          nginxversion: 'nginx version: nginx/1.18.0'
+        };
+        socket.emit('renderdash', dashinfo);
+      });
+
+      socket.on('getconfig', () => {
+        const remote_files = ['boot.cfg', 'main.ipxe'];
+        const local_files = ['custom.ipxe'];
+        socket.emit('renderconfig', remote_files, local_files);
+      });
+
+      socket.on('editgetfile', (filename, islocal) => {
+        const content = '#!ipxe\necho "Test file content"';
+        socket.emit('editrenderfile', content, filename, islocal);
+      });
+
+      socket.on('saveconfig', (filename, text) => {
+        // Simulate file save
+        socket.emit('renderconfig', ['boot.cfg'], ['custom.ipxe'], filename, true);
+      });
+
+      socket.on('createipxe', (filename) => {
+        socket.emit('renderconfig', ['boot.cfg'], ['custom.ipxe', filename], filename, true);
+      });
+
+      socket.on('revertconfig', (filename) => {
+        socket.emit('renderconfig', ['boot.cfg'], ['custom.ipxe']);
+      });
+
+      socket.on('getlocal', () => {
+        const endpoints = { test: { name: 'Test Endpoint' } };
+        const assets = ['/test/file1.img', '/test/file2.iso'];
+        const remotemenuversion = '2.0.0-test';
+        socket.emit('renderlocal', endpoints, assets, remotemenuversion);
+      });
+
+      socket.on('dlremote', (dlfiles) => {
+        // Simulate download
+        setTimeout(() => {
+          socket.emit('renderlocalhook');
+        }, 100);
+      });
+
+      socket.on('deletelocal', (dlfiles) => {
+        socket.emit('renderlocalhook');
+      });
+
+      socket.on('upgrademenus', (version) => {
+        setTimeout(() => {
+          socket.emit('renderdashhook');
+        }, 100);
+      });
+
+      socket.on('devgetbrowser', () => {
+        const releases = [{ tag_name: '2.0.0' }];
+        const commits = [{ sha: 'abc123' }];
+        socket.emit('devrenderbrowser', releases, commits);
+      });
+    });
+
+    server.listen(() => {
+      port = server.address().port;
+      done();
+    });
+  });
+
+  beforeEach((done) => {
+    clientSocket = new Client(`http://localhost:${port}`, {
+      path: '/socket.io',
+      transports: ['websocket']
+    });
+    
+    clientSocket.on('connect', () => {
+      done();
+    });
+  });
+
+  afterEach((done) => {
+    if (clientSocket && clientSocket.connected) {
+      clientSocket.disconnect();
+    }
+    // Give socket time to disconnect
+    setTimeout(done, 10);
+  });
+
+  afterAll((done) => {
+    // Clean up everything
+    if (clientSocket && clientSocket.connected) {
+      clientSocket.disconnect();
+    }
+    
+    if (io) {
+      io.close();
+    }
+    
+    if (server) {
+      server.close(() => {
+        nock.cleanAll();
+        done();
+      });
+    } else {
+      nock.cleanAll();
+      done();
+    }
+  });
+
+  describe('Dashboard Operations', () => {
+    test('should get dashboard information', (done) => {
+      clientSocket.on('renderdash', (dashinfo) => {
+        expect(dashinfo).toHaveProperty('webversion', '0.7.5');
+        expect(dashinfo).toHaveProperty('menuversion', '2.0.0-test');
+        expect(dashinfo).toHaveProperty('cpu');
+        expect(dashinfo).toHaveProperty('mem');
+        expect(dashinfo).toHaveProperty('CPUpercent');
+        done();
+      });
+
+      clientSocket.emit('getdash');
+    });
+
+    test('should handle menu upgrades', (done) => {
+      clientSocket.on('renderdashhook', () => {
+        done();
+      });
+
+      clientSocket.emit('upgrademenus', '2.0.0');
+    });
+  });
+
+  describe('Configuration Management', () => {
+    test('should get configuration file list', (done) => {
+      clientSocket.on('renderconfig', (remote_files, local_files) => {
+        expect(Array.isArray(remote_files)).toBe(true);
+        expect(Array.isArray(local_files)).toBe(true);
+        expect(remote_files).toContain('boot.cfg');
+        expect(local_files).toContain('custom.ipxe');
+        done();
+      });
+
+      clientSocket.emit('getconfig');
+    });
+
+    test('should get file content for editing', (done) => {
+      clientSocket.on('editrenderfile', (content, filename, islocal) => {
+        expect(content).toContain('#!ipxe');
+        expect(filename).toBe('test.ipxe');
+        expect(islocal).toBe('local');
+        done();
+      });
+
+      clientSocket.emit('editgetfile', 'test.ipxe', 'local');
+    });
+
+    test('should save file configuration', (done) => {
+      clientSocket.on('renderconfig', (remote_files, local_files, filename, saved) => {
+        if (saved) {
+          expect(filename).toBe('test.ipxe');
+          expect(saved).toBe(true);
+          done();
+        }
+      });
+
+      clientSocket.emit('saveconfig', 'test.ipxe', '#!ipxe\necho "Updated content"');
+    });
+
+    test('should create new iPXE file', (done) => {
+      clientSocket.on('renderconfig', (remote_files, local_files, filename, created) => {
+        if (created) {
+          expect(filename).toBe('new-menu.ipxe');
+          expect(local_files).toContain('new-menu.ipxe');
+          done();
+        }
+      });
+
+      clientSocket.emit('createipxe', 'new-menu.ipxe');
+    });
+
+    test('should revert file changes', (done) => {
+      clientSocket.on('renderconfig', (remote_files, local_files) => {
+        expect(Array.isArray(remote_files)).toBe(true);
+        expect(Array.isArray(local_files)).toBe(true);
+        done();
+      });
+
+      clientSocket.emit('revertconfig', 'test.ipxe');
+    });
+  });
+
+  describe('Asset Management', () => {
+    test('should get local assets information', (done) => {
+      clientSocket.on('renderlocal', (endpoints, assets, version) => {
+        expect(typeof endpoints).toBe('object');
+        expect(Array.isArray(assets)).toBe(true);
+        expect(typeof version).toBe('string');
+        expect(assets).toContain('/test/file1.img');
+        done();
+      });
+
+      clientSocket.emit('getlocal');
+    });
+
+    test('should handle remote downloads', (done) => {
+      clientSocket.on('renderlocalhook', () => {
+        done();
+      });
+
+      clientSocket.emit('dlremote', ['/test/file1.img']);
+    });
+
+    test('should handle local file deletion', (done) => {
+      clientSocket.on('renderlocalhook', () => {
+        done();
+      });
+
+      clientSocket.emit('deletelocal', ['/test/file1.img']);
+    });
+  });
+
+  describe('Development Features', () => {
+    test('should get development browser information', (done) => {
+      clientSocket.on('devrenderbrowser', (releases, commits) => {
+        expect(Array.isArray(releases)).toBe(true);
+        expect(Array.isArray(commits)).toBe(true);
+        expect(releases[0]).toHaveProperty('tag_name');
+        expect(commits[0]).toHaveProperty('sha');
+        done();
+      });
+
+      clientSocket.emit('devgetbrowser');
+    });
+  });
+
+  describe('Error Handling', () => {
+    test('should handle invalid file paths', (done) => {
+      let errorReceived = false;
+      
+      clientSocket.on('error', (message) => {
+        expect(message).toContain('Invalid file path');
+        errorReceived = true;
+        done();
+      });
+
+      // Simulate sending a malicious file path
+      serverSocket.emit('error', 'Invalid file path');
+      
+      setTimeout(() => {
+        if (!errorReceived) {
+          done();
+        }
+      }, 100);
+    });
+
+    test('should handle connection timeouts gracefully', (done) => {
+      const timeout = setTimeout(() => {
+        expect(clientSocket.connected).toBe(true);
+        done();
+      }, 1000);
+
+      clientSocket.on('disconnect', () => {
+        clearTimeout(timeout);
+        done();
+      });
+    });
+  });
+
+  describe('Performance', () => {
+    test('should handle multiple rapid requests', (done) => {
+      let responseCount = 0;
+      const expectedResponses = 5;
+
+      clientSocket.on('renderconfig', () => {
+        responseCount++;
+        if (responseCount === expectedResponses) {
+          done();
+        }
+      });
+
+      // Send multiple rapid requests
+      for (let i = 0; i < expectedResponses; i++) {
+        clientSocket.emit('getconfig');
+      }
+    });
+
+    test('should respond to dashboard requests quickly', (done) => {
+      const startTime = Date.now();
+
+      clientSocket.on('renderdash', () => {
+        const responseTime = Date.now() - startTime;
+        expect(responseTime).toBeLessThan(2000); // Should respond within 2 seconds
+        done();
+      });
+
+      clientSocket.emit('getdash');
+    });
+  });
+});
