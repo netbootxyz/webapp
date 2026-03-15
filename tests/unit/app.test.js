@@ -10,7 +10,9 @@ jest.mock('child_process');
 jest.mock('systeminformation');
 jest.mock('js-yaml');
 jest.mock('readdirp');
-jest.mock('isbinaryfile');
+jest.mock('isbinaryfile', () => ({
+  isBinaryFile: jest.fn(),
+}));
 
 describe('NetbootXYZ WebApp', () => {
   let app;
