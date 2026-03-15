@@ -169,14 +169,10 @@ describe('NetbootXYZ WebApp', () => {
     });
 
     test('should handle binary file detection', async () => {
-      const { isBinaryFile } = require('isbinaryfile');
-      
-      // Mock binary file detection
+      // Mock binary file detection (isbinaryfile is ESM-only, so mock directly)
       const mockIsBinaryFile = jest.fn()
         .mockResolvedValueOnce(true)  // Binary file
         .mockResolvedValueOnce(false); // Text file
-
-      require('isbinaryfile').isBinaryFile = mockIsBinaryFile;
 
       const data = Buffer.from('test content');
       const stat = { size: data.length };
