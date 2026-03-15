@@ -82,9 +82,14 @@ afterEach(async () => {
   });
   activeIntervals.clear();
   
-  // Clear any nock interceptors
-  if (typeof require('nock') !== 'undefined') {
-    require('nock').cleanAll();
+  // Clear any nock interceptors (only if nock has already been loaded)
+  try {
+    const nock = require.resolve('nock');
+    if (require.cache[nock]) {
+      require('nock').cleanAll();
+    }
+  } catch (e) {
+    // nock not installed, skip
   }
 });
 
