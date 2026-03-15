@@ -27,7 +27,7 @@
     "express": "4.21.2",
     "http": "0.0.0",
     "isbinaryfile": "5.0.6",
-    "js-yaml": "4.1.0",
+    "js-yaml": "4.1.1",
     "node-downloader-helper": "2.1.9",
     "readdirp": "3.6.0",
     "node-fetch": "2.7.0",
