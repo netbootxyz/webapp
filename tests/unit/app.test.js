@@ -244,16 +244,14 @@ describe('NetbootXYZ WebApp', () => {
       nock.cleanAll();
       nock('https://api.github.com')
         .get('/repos/netbootxyz/netboot.xyz/releases/latest')
-        .replyWithError('Network error');
+        .reply(500, { message: 'Internal Server Error' });
 
       // The app should handle network failures gracefully
       const fetch = require('node-fetch');
       
-      try {
-        await fetch('https://api.github.com/repos/netbootxyz/netboot.xyz/releases/latest');
-      } catch (error) {
-        expect(error.message).toContain('Network error');
-      }
+      const response = await fetch('https://api.github.com/repos/netbootxyz/netboot.xyz/releases/latest');
+      expect(response.ok).toBe(false);
+      expect(response.status).toBe(500);
     });
   });
 
