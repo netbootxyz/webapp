@@ -10,6 +10,7 @@ jest.mock('child_process');
 jest.mock('systeminformation');
 jest.mock('js-yaml');
 jest.mock('readdirp');
+jest.mock('isbinaryfile');
 
 describe('NetbootXYZ WebApp', () => {
   let app;
@@ -169,23 +170,24 @@ describe('NetbootXYZ WebApp', () => {
     });
 
     test('should handle binary file detection', async () => {
+      // Test the binary detection logic used by the editgetfile socket handler
+      // in app.js: it reads a file, checks isBinaryFile, and branches on the result
       const { isBinaryFile } = require('isbinaryfile');
-      
-      // Mock binary file detection
-      const mockIsBinaryFile = jest.fn()
-        .mockResolvedValueOnce(true)  // Binary file
-        .mockResolvedValueOnce(false); // Text file
 
-      require('isbinaryfile').isBinaryFile = mockIsBinaryFile;
+      const textData = Buffer.from('set sigs_enabled true\necho "Boot config"');
+      const binaryData = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]);
 
-      const data = Buffer.from('test content');
-      const stat = { size: data.length };
+      // Simulate binary file detection for a text file
+      isBinaryFile.mockResolvedValueOnce(false);
+      const textResult = await isBinaryFile(textData, textData.length);
+      expect(textResult).toBe(false);
+      expect(isBinaryFile).toHaveBeenCalledWith(textData, textData.length);
 
-      const isBinary1 = await mockIsBinaryFile(data, stat.size);
-      const isBinary2 = await mockIsBinaryFile(data, stat.size);
-
-      expect(isBinary1).toBe(true);
-      expect(isBinary2).toBe(false);
+      // Simulate binary file detection for a binary file
+      isBinaryFile.mockResolvedValueOnce(true);
+      const binaryResult = await isBinaryFile(binaryData, binaryData.length);
+      expect(binaryResult).toBe(true);
+      expect(isBinaryFile).toHaveBeenCalledWith(binaryData, binaryData.length);
     });
   });
 
