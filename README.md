@@ -46,7 +46,7 @@ A modern web interface for editing iPXE boot menus and managing local asset mirr
 ### Building with Docker
 
 ```bash
-git clone https://github.com/netbootxyz/webapp
+git clone https://github.com/Adambis1/webapp
 cd webapp
 git clone https://github.com/netbootxyz/docker-netbootxyz
 docker build . -t netbootxyz-webapp
