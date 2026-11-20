@@ -20,7 +20,7 @@ const allowedHosts = [
 ];
 var si = require('systeminformation');
 const util = require('util');
-var { findRemoteParts } = require('./lib/utils');
+var { findLocalParts, findRemoteParts } = require('./lib/utils');
 var { version } = require('./package.json');
 var yaml = require('js-yaml');
 var baserouter = express.Router();
@@ -205,9 +205,10 @@ io.on('connection', function(socket){
       var file = dlfiles[i];
       fs.unlinkSync('/assets' + file);
       console.log('Deleted /assets' + file);
-      if (fs.existsSync('/assets' + file + '.part2')) {
-        fs.unlinkSync('/assets' + file + '.part2');
-        console.log('Deleted /assets' + file + '.part2');
+      // Delete the next parts (.part2, .part3, and so on) if they exist
+      for (const part of findLocalParts('/assets' + file, fs.existsSync)) {
+        fs.unlinkSync(part);
+        console.log('Deleted ' + part);
       }
     }
     io.sockets.in(socket.id).emit('renderlocalhook');
