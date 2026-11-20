@@ -471,7 +471,8 @@ socket.on('renderlocal', function(endpoints,localfiles,remotemenuversion){
   if (localfiles.length != 0){
     var untrackedtable = $('#untrackedassets').DataTable(tableoptions);
     $.each(localfiles, function( arrindex, file ) {
-      if (!file.endsWith('.part2')) {
+      // Do not show the parts (.part2, .part3, and so on) of a multipart asset
+      if (!/\.part\d+$/.test(file)) {
         untrackedtable.row.add( 
           [
             '/assets' + file,

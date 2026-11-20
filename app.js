@@ -20,6 +20,7 @@ const allowedHosts = [
 ];
 var si = require('systeminformation');
 const util = require('util');
+var { findLocalParts, findRemoteParts } = require('./lib/utils');
 var { version } = require('./package.json');
 var yaml = require('js-yaml');
 var baserouter = express.Router();
@@ -204,9 +205,10 @@ io.on('connection', function(socket){
       var file = dlfiles[i];
       fs.unlinkSync('/assets' + file);
       console.log('Deleted /assets' + file);
-      if (fs.existsSync('/assets' + file + '.part2')) {
-        fs.unlinkSync('/assets' + file + '.part2');
-        console.log('Deleted /assets' + file + '.part2');
+      // Delete the next parts (.part2, .part3, and so on) if they exist
+      for (const part of findLocalParts('/assets' + file, fs.existsSync)) {
+        fs.unlinkSync(part);
+        console.log('Deleted ' + part);
       }
     }
     io.sockets.in(socket.id).emit('renderlocalhook');
@@ -349,23 +351,22 @@ async function downloader(downloads){
 
     const parsedUrl = urlLib.parse(url);
     if (!allowedHosts.includes(parsedUrl.host)){
-      // Part 2 if exists repeat
-      var response = await fetch(url + '.part2', {method: 'HEAD'});
-      var urltest = response.headers.get('server');
-      if (urltest == 'AmazonS3' || urltest == 'Windows-Azure-Blob/1.0 Microsoft-HTTPAPI/2.0') {
-        var dl2 = new DownloaderHelper(url + '.part2', path, dloptions);
-        dl2.on('end', function(){ 
-          console.log('Downloaded ' + url + '.part2' + ' to ' + path);
+      // Download the next parts (.part2, .part3, and so on) if they exist
+      var parts = await findRemoteParts(url, fetch);
+      for (const partUrl of parts) {
+        var dlpart = new DownloaderHelper(partUrl, path, dloptions);
+        dlpart.on('end', function(){
+          console.log('Downloaded ' + partUrl + ' to ' + path);
         });
-        dl2.on('progress', function(stats){
+        dlpart.on('progress', function(stats){
           var currentTime = new Date();
           var elaspsedTime = currentTime - startTime;
           if (elaspsedTime > 500) {
             startTime = currentTime;
-            io.emit('dldata', url, [+i + 1,total], stats);
+            io.emit('dldata', partUrl, [+i + 1,total], stats);
           }
         });
-        await dl2.start();
+        await dlpart.start();
       }
     }
   }
