@@ -363,7 +363,7 @@ async function downloader(downloads){
           var elaspsedTime = currentTime - startTime;
           if (elaspsedTime > 500) {
             startTime = currentTime;
-            io.emit('dldata', url, [+i + 1,total], stats);
+            io.emit('dldata', partUrl, [+i + 1,total], stats);
           }
         });
         await dlpart.start();
